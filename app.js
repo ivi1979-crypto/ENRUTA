@@ -457,4 +457,4 @@ function trips(A) {
 
               <h3>${t.name}</h3>
 
-              <p class="mut
+              <p class="muted">${t.date} · ${vehicle(t.vehicle)?.name || ''}</p>
