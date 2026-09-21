@@ -1,5 +1,4 @@
-const C = 'enruta-0-7';
-
+const C = 'enruta-0-8';
 
 const ASSETS = [
   './',
@@ -9,101 +8,44 @@ const ASSETS = [
   './manifest.webmanifest'
 ];
 
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(C).then(cache => cache.addAll(ASSETS))
+  );
 
-self.addEventListener(
-  'install',
-  event => {
+  self.skipWaiting();
+});
 
-    event.waitUntil(
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(key => key !== C)
+          .map(key => caches.delete(key))
+      )
+    )
+  );
 
-      caches
-        .open(C)
-        .then(cache =>
-          cache.addAll(ASSETS)
-        )
+  self.clients.claim();
+});
 
-    );
-
-
-    self.skipWaiting();
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') {
+    return;
   }
-);
 
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        const copy = response.clone();
 
-self.addEventListener(
-  'activate',
-  event => {
+        caches.open(C).then(cache => {
+          cache.put(event.request, copy);
+        });
 
-    event.waitUntil(
-
-      caches
-        .keys()
-        .then(keys =>
-          Promise.all(
-
-            keys
-              .filter(
-                key => key !== C
-              )
-              .map(
-                key =>
-                  caches.delete(key)
-              )
-
-          )
-        )
-
-    );
-
-
-    self.clients.claim();
-  }
-);
-
-
-self.addEventListener(
-  'fetch',
-  event => {
-
-    if (
-      event.request.method !==
-      'GET'
-    ) {
-      return;
-    }
-
-
-    event.respondWith(
-
-      fetch(event.request)
-        .then(response => {
-
-          const copy =
-            response.clone();
-
-
-          caches
-            .open(C)
-            .then(cache => {
-
-              cache.put(
-                event.request,
-                copy
-              );
-
-            });
-
-
-          return response;
-
-        })
-        .catch(() =>
-          caches.match(
-            event.request
-          )
-        )
-
-    );
-
-  }
-);
+        return response;
+      })
+      .catch(() => caches.match(event.request))
+  );
+});
