@@ -1,3 +1,57 @@
+const NativeGeolocation =
+  window.Capacitor?.registerPlugin?.('Geolocation');
+
+function getAppPosition(success, error, options = {}) {
+
+  if (NativeGeolocation) {
+
+    NativeGeolocation.requestPermissions()
+      .then(permission => {
+
+        if (
+          permission.location !== 'granted' &&
+          permission.location !== 'limited'
+        ) {
+          throw new Error('Permiso de ubicación denegado');
+        }
+
+        return NativeGeolocation.getCurrentPosition(options);
+
+      })
+      .then(position => {
+        success(position);
+      })
+      .catch(err => {
+
+        if (error) {
+          error(err);
+        }
+
+      });
+
+    return;
+  }
+
+  if (navigator.geolocation) {
+
+    navigator.geolocation.getCurrentPosition(
+      success,
+      error,
+      options
+    );
+
+    return;
+  }
+
+  if (error) {
+    error(
+      new Error(
+        'La geolocalización no está disponible'
+      )
+    );
+  }
+}
+
 const K = 'enruta04';
 
 let db = JSON.parse(localStorage.getItem(K) || 'null') || {
@@ -1130,7 +1184,7 @@ function findNearbyStations() {
   }
 
 
-  navigator.geolocation.getCurrentPosition(
+  getAppPosition(
 
     async position => {
 
