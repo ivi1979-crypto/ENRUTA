@@ -69,6 +69,176 @@ function toast(message) {
 
 
 /* =========================================================
+   ITV
+========================================================= */
+
+function formatDateES(value) {
+
+  if (!value) {
+    return '—';
+  }
+
+  const date =
+    new Date(`${value}T00:00:00`);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return value;
+  }
+
+  return date.toLocaleDateString(
+    'es-ES'
+  );
+}
+
+
+function itvInfo(v) {
+
+  const next =
+    v?.itvNext || '';
+
+
+  if (!next) {
+
+    return {
+
+      label:
+        'Sin fecha registrada',
+
+      className:
+        'muted',
+
+      icon:
+        '⚪'
+
+    };
+
+  }
+
+
+  const todayDate =
+    new Date();
+
+  todayDate.setHours(
+    0,
+    0,
+    0,
+    0
+  );
+
+
+  const nextDate =
+    new Date(
+      `${next}T00:00:00`
+    );
+
+
+  if (
+    Number.isNaN(
+      nextDate.getTime()
+    )
+  ) {
+
+    return {
+
+      label:
+        'Fecha no válida',
+
+      className:
+        'danger',
+
+      icon:
+        '🔴'
+
+    };
+
+  }
+
+
+  const days =
+    Math.ceil(
+      (
+        nextDate -
+        todayDate
+      ) /
+      86400000
+    );
+
+
+  if (days < 0) {
+
+    return {
+
+      label:
+        `Caducada hace ${Math.abs(days)} días`,
+
+      className:
+        'danger',
+
+      icon:
+        '🔴'
+
+    };
+
+  }
+
+
+  if (days === 0) {
+
+    return {
+
+      label:
+        'Caduca hoy',
+
+      className:
+        'warning',
+
+      icon:
+        '🟠'
+
+    };
+
+  }
+
+
+  if (days <= 30) {
+
+    return {
+
+      label:
+        `Vence en ${days} días`,
+
+      className:
+        'warning',
+
+      icon:
+        '🟠'
+
+    };
+
+  }
+
+
+  return {
+
+    label:
+      'En vigor',
+
+    className:
+      'good',
+
+    icon:
+      '🟢'
+
+  };
+
+}
+
+
+/* =========================================================
    MIGRACIÓN / COMPATIBILIDAD
 ========================================================= */
 
@@ -100,6 +270,19 @@ function migrateData() {
   if (!Array.isArray(db.maint)) {
     db.maint = [];
   }
+
+
+  db.vehicles.forEach(v => {
+
+    if (v.itvLast == null) {
+      v.itvLast = '';
+    }
+
+    if (v.itvNext == null) {
+      v.itvNext = '';
+    }
+
+  });
 
 
   db.fuel.forEach(f => {
@@ -498,6 +681,9 @@ function vehicles() {
                   const consumption =
                     learnedConsumption(v.id);
 
+                  const itv =
+                    itvInfo(v);
+
                   return `
 
                     <article class="card">
@@ -529,6 +715,12 @@ function vehicles() {
                               `
                               : ''
                           }
+
+                          <small>
+                            ITV:
+                            ${itv.icon}
+                            ${itv.label}
+                          </small>
 
                         </div>
 
@@ -723,6 +915,10 @@ function vehicleDetail(id) {
     learnedConsumption(id);
 
 
+  const itv =
+    itvInfo(v);
+
+
   const yearly = {};
 
 
@@ -845,6 +1041,68 @@ function vehicleDetail(id) {
             <span>
               Viajes
             </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="card">
+
+          <div class="section-head">
+
+            <div>
+
+              <h3>
+                🔎 ITV
+              </h3>
+
+              <p class="muted">
+
+                ${itv.icon}
+                ${itv.label}
+
+              </p>
+
+            </div>
+
+
+            <button
+              type="button"
+              onclick="itvForm('${v.id}')"
+            >
+              ✏️ Editar
+            </button>
+
+          </div>
+
+
+          <div class="detail-grid">
+
+            <div>
+
+              <span>
+                Última ITV
+              </span>
+
+              <strong>
+                ${formatDateES(v.itvLast)}
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Próxima ITV
+              </span>
+
+              <strong>
+                ${formatDateES(v.itvNext)}
+              </strong>
+
+            </div>
 
           </div>
 
@@ -1277,6 +1535,199 @@ function vehicleDetail(id) {
 
 
 /* =========================================================
+   FORMULARIO ITV
+========================================================= */
+
+function itvForm(id) {
+
+  const v =
+    vehicle(id);
+
+
+  if (!v) {
+    return;
+  }
+
+
+  fullScreenForm(`
+
+    <div class="form-page">
+
+      <div class="form-page-head">
+
+        <button
+          type="button"
+          class="ghost form-back"
+          onclick="closeModal(); vehicleDetail('${v.id}')"
+        >
+          ← Volver
+        </button>
+
+
+        <div>
+
+          <h1>
+            ITV
+          </h1>
+
+          <p class="muted">
+            ${escapeHtml(
+              v.name ||
+              v.brand ||
+              'Vehículo'
+            )}
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <form
+        id="itvForm"
+        class="full-form"
+      >
+
+        <label>
+
+          Última ITV
+
+          <input
+            type="date"
+            name="itvLast"
+            value="${escapeAttr(v.itvLast || '')}"
+          >
+
+        </label>
+
+
+        <label>
+
+          Próxima ITV
+
+          <input
+            type="date"
+            name="itvNext"
+            value="${escapeAttr(v.itvNext || '')}"
+          >
+
+        </label>
+
+
+        <div class="card">
+
+          <h3>
+            Estado actual
+          </h3>
+
+          <p class="muted">
+
+            ${
+              itvInfo(v).icon
+            }
+
+            ${
+              itvInfo(v).label
+            }
+
+          </p>
+
+        </div>
+
+
+        <div class="form-page-actions">
+
+          <button
+            type="button"
+            class="ghost"
+            onclick="closeModal(); vehicleDetail('${v.id}')"
+          >
+            Cancelar
+          </button>
+
+
+          <button
+            type="submit"
+            class="primary"
+          >
+            Guardar ITV
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  `);
+
+
+  document
+    .getElementById('itvForm')
+    .addEventListener(
+      'submit',
+      e => {
+
+        e.preventDefault();
+
+
+        const fd =
+          new FormData(e.target);
+
+
+        const last =
+          fd.get('itvLast') || '';
+
+
+        const next =
+          fd.get('itvNext') || '';
+
+
+        if (
+          last &&
+          next &&
+          next < last
+        ) {
+
+          toast(
+            'La próxima ITV no puede ser anterior a la última'
+          );
+
+          return;
+        }
+
+
+        v.itvLast =
+          last;
+
+        v.itvNext =
+          next;
+
+
+        v.updatedAt =
+          Date.now();
+
+
+        save();
+
+        closeModal();
+
+        toast(
+          'ITV actualizada'
+        );
+
+
+        vehicleDetail(
+          v.id
+        );
+
+      }
+    );
+
+}
+
+
+/* =========================================================
    FORMULARIO VEHÍCULO
 ========================================================= */
 
@@ -1406,6 +1857,46 @@ function vehicleForm(record = null) {
         </label>
 
 
+        <div class="card">
+
+          <h3>
+            ITV
+          </h3>
+
+          <p class="muted">
+            Puedes dejar estas fechas vacías
+            y añadirlas más adelante.
+          </p>
+
+
+          <label>
+
+            Última ITV
+
+            <input
+              type="date"
+              name="itvLast"
+              value="${escapeAttr(v.itvLast || '')}"
+            >
+
+          </label>
+
+
+          <label>
+
+            Próxima ITV
+
+            <input
+              type="date"
+              name="itvNext"
+              value="${escapeAttr(v.itvNext || '')}"
+            >
+
+          </label>
+
+        </div>
+
+
         <div class="form-page-actions">
 
           <button
@@ -1449,6 +1940,28 @@ function vehicleForm(record = null) {
           new FormData(e.target);
 
 
+        const itvLast =
+          fd.get('itvLast') || '';
+
+
+        const itvNext =
+          fd.get('itvNext') || '';
+
+
+        if (
+          itvLast &&
+          itvNext &&
+          itvNext < itvLast
+        ) {
+
+          toast(
+            'La próxima ITV no puede ser anterior a la última'
+          );
+
+          return;
+        }
+
+
         const data = {
 
           name:
@@ -1469,7 +1982,11 @@ function vehicleForm(record = null) {
           consumption:
             Number(
               fd.get('consumption') || 0
-            )
+            ),
+
+          itvLast,
+
+          itvNext
 
         };
 
@@ -3455,6 +3972,9 @@ document.addEventListener(
               : []
 
         };
+
+
+        migrateData();
 
 
         save();
