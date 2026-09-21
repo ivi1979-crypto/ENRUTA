@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#0b1220"
+  >
+
+  <meta
+    name="description"
+    content="ENRUTA · Gestión de vehículos, viajes, combustible y mantenimiento"
+  >
+
+  <link
+    rel="manifest"
+    href="manifest.webmanifest"
+  >
+
+  <link
+    rel="stylesheet"
+    href="styles.css"
+  >
+
+  <title>ENRUTA</title>
+</head>
+
+<body>
+
+  <header>
+
+    <div class="brand-area">
+
+      <div
+        class="brand-logo"
+        aria-label="ENRUTA"
+      >
+        <span class="brand-route"></span>
+        <span class="brand-text">ENRUTA</span>
+      </div>
+
+      <small>
+        Viajes · combustible · mantenimiento
+      </small>
+
+    </div>
+
+    <button
+      id="install"
+      class="ghost"
+      hidden
+      type="button"
+    >
+      Instalar
+    </button>
+
+  </header>
+
+
+  <main id="app"></main>
+
+
+  <nav id="nav">
+
+    <button
+      data-page="home"
+      type="button"
+    >
+      ⌂
+      <span>Inicio</span>
+    </button>
+
+    <button
+      data-page="trips"
+      type="button"
+    >
+      🧭
+      <span>Viajes</span>
+    </button>
+
+    <button
+      data-page="fuel"
+      type="button"
+    >
+      ⛽
+      <span>Repostajes</span>
+    </button>
+
+    <button
+      data-page="vehicles"
+      type="button"
+    >
+      🚐
+      <span>Vehículos</span>
+    </button>
+
+    <button
+      data-page="more"
+      type="button"
+    >
+      ☰
+      <span>Más</span>
+    </button>
+
+  </nav>
+
+
+  <div id="toast"></div>
+
+
+  <script src="app.js?v=10"></script>
+
+</body>
+</html>
