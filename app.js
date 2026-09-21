@@ -41,23 +41,16 @@ function vehicle(id) {
 
 
 function closeModal() {
-
   const m = document.querySelector('.modal');
-
-  if (m) {
-    m.remove();
-  }
+  if (m) m.remove();
 }
 
 
 function toast(message) {
-
   const el = document.getElementById('toast');
-
   if (!el) return;
 
   el.textContent = message;
-
   el.classList.add('show');
 
   clearTimeout(window.__toastTimer);
@@ -73,168 +66,76 @@ function toast(message) {
 ========================================================= */
 
 function formatDateES(value) {
+  if (!value) return '—';
 
-  if (!value) {
-    return '—';
-  }
+  const date = new Date(`${value}T00:00:00`);
 
-  const date =
-    new Date(`${value}T00:00:00`);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return value;
   }
 
-  return date.toLocaleDateString(
-    'es-ES'
-  );
+  return date.toLocaleDateString('es-ES');
 }
 
 
 function itvInfo(v) {
-
-  const next =
-    v?.itvNext || '';
-
+  const next = v?.itvNext || '';
 
   if (!next) {
-
     return {
-
-      label:
-        'Sin fecha registrada',
-
-      className:
-        'muted',
-
-      icon:
-        '⚪'
-
+      label: 'Sin fecha registrada',
+      className: 'muted',
+      icon: '⚪'
     };
-
   }
 
+  const todayDate = new Date();
 
-  const todayDate =
-    new Date();
+  todayDate.setHours(0, 0, 0, 0);
 
-  todayDate.setHours(
-    0,
-    0,
-    0,
-    0
+  const nextDate = new Date(`${next}T00:00:00`);
+
+  if (Number.isNaN(nextDate.getTime())) {
+    return {
+      label: 'Fecha no válida',
+      className: 'danger',
+      icon: '🔴'
+    };
+  }
+
+  const days = Math.ceil(
+    (nextDate - todayDate) / 86400000
   );
 
-
-  const nextDate =
-    new Date(
-      `${next}T00:00:00`
-    );
-
-
-  if (
-    Number.isNaN(
-      nextDate.getTime()
-    )
-  ) {
-
-    return {
-
-      label:
-        'Fecha no válida',
-
-      className:
-        'danger',
-
-      icon:
-        '🔴'
-
-    };
-
-  }
-
-
-  const days =
-    Math.ceil(
-      (
-        nextDate -
-        todayDate
-      ) /
-      86400000
-    );
-
-
   if (days < 0) {
-
     return {
-
-      label:
-        `Caducada hace ${Math.abs(days)} días`,
-
-      className:
-        'danger',
-
-      icon:
-        '🔴'
-
+      label: `Caducada hace ${Math.abs(days)} días`,
+      className: 'danger',
+      icon: '🔴'
     };
-
   }
-
 
   if (days === 0) {
-
     return {
-
-      label:
-        'Caduca hoy',
-
-      className:
-        'warning',
-
-      icon:
-        '🟠'
-
+      label: 'Caduca hoy',
+      className: 'warning',
+      icon: '🟠'
     };
-
   }
-
 
   if (days <= 30) {
-
     return {
-
-      label:
-        `Vence en ${days} días`,
-
-      className:
-        'warning',
-
-      icon:
-        '🟠'
-
+      label: `Vence en ${days} días`,
+      className: 'warning',
+      icon: '🟠'
     };
-
   }
 
-
   return {
-
-    label:
-      'En vigor',
-
-    className:
-      'good',
-
-    icon:
-      '🟢'
-
+    label: 'En vigor',
+    className: 'good',
+    icon: '🟢'
   };
-
 }
 
 
@@ -245,43 +146,23 @@ function itvInfo(v) {
 function migrateData() {
 
   if (!db || typeof db !== 'object') {
-
     db = {
       vehicles: [],
       fuel: [],
       trips: [],
       maint: []
     };
-
   }
 
-  if (!Array.isArray(db.vehicles)) {
-    db.vehicles = [];
-  }
-
-  if (!Array.isArray(db.fuel)) {
-    db.fuel = [];
-  }
-
-  if (!Array.isArray(db.trips)) {
-    db.trips = [];
-  }
-
-  if (!Array.isArray(db.maint)) {
-    db.maint = [];
-  }
+  if (!Array.isArray(db.vehicles)) db.vehicles = [];
+  if (!Array.isArray(db.fuel)) db.fuel = [];
+  if (!Array.isArray(db.trips)) db.trips = [];
+  if (!Array.isArray(db.maint)) db.maint = [];
 
 
   db.vehicles.forEach(v => {
-
-    if (v.itvLast == null) {
-      v.itvLast = '';
-    }
-
-    if (v.itvNext == null) {
-      v.itvNext = '';
-    }
-
+    if (v.itvLast == null) v.itvLast = '';
+    if (v.itvNext == null) v.itvNext = '';
   });
 
 
@@ -311,6 +192,26 @@ function migrateData() {
       f.full = f.lleno;
     }
 
+    if (f.fuelType == null) {
+      f.fuelType = '';
+    }
+
+    if (f.stationName == null) {
+      f.stationName = '';
+    }
+
+    if (f.stationAddress == null) {
+      f.stationAddress = '';
+    }
+
+    if (f.stationLat == null) {
+      f.stationLat = '';
+    }
+
+    if (f.stationLng == null) {
+      f.stationLng = '';
+    }
+
   });
 
   save();
@@ -325,13 +226,11 @@ migrateData();
 ========================================================= */
 
 function fuelLiters(f) {
-
   return Number(
     f.liters ??
     f.litres ??
     0
   );
-
 }
 
 
@@ -341,57 +240,41 @@ function fuelAmount(f) {
     return Number(f.amount || 0);
   }
 
-  const liters = fuelLiters(f);
-
-  const price = Number(f.price || 0);
-
-  return liters * price;
+  return fuelLiters(f) * Number(f.price || 0);
 }
 
 
 function avg(values) {
 
-  const nums =
-    values
-      .map(Number)
-      .filter(n => Number.isFinite(n));
+  const nums = values
+    .map(Number)
+    .filter(n => Number.isFinite(n));
 
-  if (!nums.length) {
-    return 0;
-  }
+  if (!nums.length) return 0;
 
-  return nums.reduce(
-    (a, b) => a + b,
-    0
-  ) / nums.length;
+  return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
 
 
 function learnedConsumption(vehicleId) {
 
-  const list =
-    db.fuel
-      .filter(f =>
-        f.vehicleId === vehicleId &&
-        f.full &&
-        Number.isFinite(Number(f.km))
-      )
-      .sort((a, b) =>
-        Number(a.km) -
-        Number(b.km)
-      );
+  const list = db.fuel
+    .filter(f =>
+      f.vehicleId === vehicleId &&
+      f.full &&
+      Number.isFinite(Number(f.km))
+    )
+    .sort((a, b) =>
+      Number(a.km) - Number(b.km)
+    );
 
-  if (list.length < 2) {
-    return null;
-  }
+  if (list.length < 2) return null;
 
   const consumptions = [];
-
 
   for (let i = 1; i < list.length; i++) {
 
     const previous = list[i - 1];
-
     const current = list[i];
 
     const km =
@@ -401,26 +284,1148 @@ function learnedConsumption(vehicleId) {
     const liters =
       fuelLiters(current);
 
-    if (
-      km > 0 &&
-      liters > 0
-    ) {
-
+    if (km > 0 && liters > 0) {
       consumptions.push(
         liters * 100 / km
       );
+    }
+  }
+
+  if (!consumptions.length) return null;
+
+  return avg(consumptions);
+}
+
+
+/* =========================================================
+   ESTADÍSTICAS DE COMBUSTIBLE
+========================================================= */
+
+function fuelStatistics(vehicleId = null) {
+
+  const list = db.fuel.filter(f =>
+    !vehicleId ||
+    f.vehicleId === vehicleId
+  );
+
+  const prices = list
+    .map(f => Number(f.price || 0))
+    .filter(p => p > 0);
+
+  const liters = list.reduce(
+    (sum, f) => sum + fuelLiters(f),
+    0
+  );
+
+  const total = list.reduce(
+    (sum, f) => sum + fuelAmount(f),
+    0
+  );
+
+  const years = {};
+
+  list.forEach(f => {
+
+    const year =
+      String(f.date || today()).slice(0, 4);
+
+    years[year] =
+      (years[year] || 0) +
+      fuelAmount(f);
+
+  });
+
+  const stations = [
+    ...new Set(
+      list
+        .map(f => f.stationName)
+        .filter(Boolean)
+    )
+  ];
+
+  return {
+    count: list.length,
+    averagePrice: avg(prices),
+    minPrice: prices.length ? Math.min(...prices) : 0,
+    maxPrice: prices.length ? Math.max(...prices) : 0,
+    liters,
+    total,
+    years,
+    stations
+  };
+}
+
+
+function fuelStatsCard(vehicleId = null) {
+
+  const stats =
+    fuelStatistics(vehicleId);
+
+  const consumption =
+    vehicleId
+      ? learnedConsumption(vehicleId)
+      : null;
+
+  const years =
+    Object.keys(stats.years)
+      .sort()
+      .reverse();
+
+  return `
+
+    <div class="card">
+
+      <h3>
+        📊 Estadísticas de combustible
+      </h3>
+
+      <div class="detail-grid">
+
+        <div>
+          <span>Precio medio</span>
+          <strong>
+            ${
+              stats.averagePrice
+                ? `${stats.averagePrice.toFixed(3)} €/L`
+                : '—'
+            }
+          </strong>
+        </div>
+
+        <div>
+          <span>Precio mínimo</span>
+          <strong>
+            ${
+              stats.minPrice
+                ? `${stats.minPrice.toFixed(3)} €/L`
+                : '—'
+            }
+          </strong>
+        </div>
+
+        <div>
+          <span>Precio máximo</span>
+          <strong>
+            ${
+              stats.maxPrice
+                ? `${stats.maxPrice.toFixed(3)} €/L`
+                : '—'
+            }
+          </strong>
+        </div>
+
+        <div>
+          <span>Litros acumulados</span>
+          <strong>
+            ${stats.liters.toFixed(1)} L
+          </strong>
+        </div>
+
+        <div>
+          <span>Gasto total</span>
+          <strong>
+            ${eur(stats.total)}
+          </strong>
+        </div>
+
+        ${
+          consumption
+            ? `
+              <div>
+                <span>Consumo calculado</span>
+                <strong>
+                  ${consumption.toFixed(2)} L/100 km
+                </strong>
+              </div>
+            `
+            : ''
+        }
+
+      </div>
+
+      ${
+        years.length
+          ? `
+            <h4>
+              Gasto por año
+            </h4>
+
+            ${years.map(year => `
+
+              <div class="list-row">
+
+                <span>
+                  ${year}
+                </span>
+
+                <strong>
+                  ${eur(stats.years[year])}
+                </strong>
+
+              </div>
+
+            `).join('')}
+          `
+          : ''
+      }
+
+      ${
+        stats.stations.length
+          ? `
+            <h4>
+              Gasolineras utilizadas
+            </h4>
+
+            <p class="muted">
+              ${stats.stations.join(' · ')}
+            </p>
+          `
+          : ''
+      }
+
+    </div>
+
+  `;
+}
+
+
+function fuelPriceEvolution(vehicleId = null) {
+
+  const list =
+    db.fuel
+      .filter(f =>
+        !vehicleId ||
+        f.vehicleId === vehicleId
+      )
+      .filter(f => Number(f.price || 0) > 0)
+      .sort((a, b) =>
+        String(b.date || '')
+          .localeCompare(
+            String(a.date || '')
+          )
+      )
+      .slice(0, 12);
+
+  return `
+
+    <div class="card">
+
+      <h3>
+        📈 Evolución de precios
+      </h3>
+
+      ${
+        list.length
+
+          ? list.map(f => `
+
+              <div class="list-row">
+
+                <div>
+
+                  <strong>
+                    ${f.date || ''}
+                  </strong>
+
+                  <small>
+                    ${
+                      escapeHtml(
+                        f.stationName ||
+                        fuelTypeLabel(f.fuelType) ||
+                        'Repostaje'
+                      )
+                    }
+                  </small>
+
+                </div>
+
+                <strong>
+                  ${Number(f.price).toFixed(3)} €/L
+                </strong>
+
+              </div>
+
+            `).join('')
+
+          : `
+
+            <p class="muted">
+              Todavía no hay precios registrados.
+            </p>
+
+          `
+      }
+
+    </div>
+
+  `;
+}
+
+
+function fuelTypeLabel(type) {
+
+  switch (type) {
+
+    case 'diesel':
+      return 'Diésel';
+
+    case 'gasolina95':
+      return 'Gasolina 95';
+
+    case 'gasolina98':
+      return 'Gasolina 98';
+
+    default:
+      return '';
+
+  }
+}
+
+
+/* =========================================================
+   GASOLINERAS - DATOS OFICIALES MITECO
+========================================================= */
+
+const FUEL_API =
+  'https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/';
+
+let stationSearchResults = [];
+let currentFuelLocation = null;
+let selectedFuelStation = null;
+
+
+function firstValue(obj, keys) {
+
+  for (const key of keys) {
+
+    if (
+      obj &&
+      obj[key] !== undefined &&
+      obj[key] !== null &&
+      String(obj[key]).trim() !== ''
+    ) {
+      return obj[key];
+    }
+
+  }
+
+  return '';
+}
+
+
+function getStationName(s) {
+
+  return firstValue(s, [
+    'Rótulo',
+    'Rotulo',
+    'Nombre',
+    'nombre',
+    'Rótulo de la estación',
+    'Rotulo de la estación'
+  ]) || 'Gasolinera';
+
+}
+
+
+function getStationAddress(s) {
+
+  const address =
+    firstValue(s, [
+      'Dirección',
+      'Direccion',
+      'dirección',
+      'direccion'
+    ]);
+
+  const town =
+    firstValue(s, [
+      'Municipio',
+      'municipio',
+      'Localidad',
+      'localidad'
+    ]);
+
+  const province =
+    firstValue(s, [
+      'Provincia',
+      'provincia'
+    ]);
+
+  return [
+    address,
+    town,
+    province
+  ]
+    .filter(Boolean)
+    .join(', ');
+}
+
+
+function getStationProvince(s) {
+
+  return firstValue(s, [
+    'Provincia',
+    'provincia'
+  ]);
+}
+
+
+function parseCoordinate(value) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    value === ''
+  ) {
+    return null;
+  }
+
+  const n =
+    Number(
+      String(value)
+        .replace(',', '.')
+        .trim()
+    );
+
+  if (!Number.isFinite(n)) {
+    return null;
+  }
+
+  return n;
+}
+
+
+function getStationLat(s) {
+
+  return parseCoordinate(
+    firstValue(s, [
+      'Latitud',
+      'latitud',
+      'LATITUD',
+      'Latitude',
+      'latitude'
+    ])
+  );
+}
+
+
+function getStationLng(s) {
+
+  return parseCoordinate(
+    firstValue(s, [
+      'Longitud (WGS84)',
+      'Longitud',
+      'longitud',
+      'LONGITUD',
+      'Longitude',
+      'longitude'
+    ])
+  );
+}
+
+
+function normalizePrice(value) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    value === ''
+  ) {
+    return 0;
+  }
+
+  const n =
+    Number(
+      String(value)
+        .replace(',', '.')
+        .trim()
+    );
+
+  return Number.isFinite(n) ? n : 0;
+}
+
+
+function getFuelPrice(s, fuelType) {
+
+  const keys = {
+
+    diesel: [
+      'Precio Gasoleo A',
+      'Precio Gasóleo A',
+      'Precio GasoleoA',
+      'Gasoleo A',
+      'Gasóleo A'
+    ],
+
+    gasolina95: [
+      'Precio Gasolina 95 E5',
+      'Precio Gasolina 95',
+      'Gasolina 95 E5',
+      'Gasolina 95'
+    ],
+
+    gasolina98: [
+      'Precio Gasolina 98 E5',
+      'Precio Gasolina 98',
+      'Gasolina 98 E5',
+      'Gasolina 98'
+    ]
+
+  };
+
+  return normalizePrice(
+    firstValue(
+      s,
+      keys[fuelType] || []
+    )
+  );
+}
+
+
+function stationHasFuelType(s, fuelType) {
+  return getFuelPrice(s, fuelType) > 0;
+}
+
+
+function distanceKm(lat1, lon1, lat2, lon2) {
+
+  const R = 6371;
+
+  const dLat =
+    (lat2 - lat1) *
+    Math.PI /
+    180;
+
+  const dLon =
+    (lon2 - lon1) *
+    Math.PI /
+    180;
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+
+  return R *
+    2 *
+    Math.atan2(
+      Math.sqrt(a),
+      Math.sqrt(1 - a)
+    );
+}
+
+
+function extractStations(data) {
+
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (!data || typeof data !== 'object') {
+    return [];
+  }
+
+  const possibleKeys = [
+    'ListaEESSPrecio',
+    'listaEESSPrecio',
+    'Estaciones',
+    'estaciones',
+    'Stations',
+    'stations'
+  ];
+
+  for (const key of possibleKeys) {
+
+    if (Array.isArray(data[key])) {
+      return data[key];
+    }
+
+  }
+
+  for (const value of Object.values(data)) {
+
+    if (Array.isArray(value)) {
+
+      if (
+        value.length &&
+        typeof value[0] === 'object'
+      ) {
+        return value;
+      }
 
     }
 
   }
 
+  return [];
+}
 
-  if (!consumptions.length) {
-    return null;
+
+function prepareNearbyStations(
+  rawStations,
+  lat,
+  lng,
+  fuelType
+) {
+
+  const stations = [];
+
+  rawStations.forEach(s => {
+
+    const stationLat =
+      getStationLat(s);
+
+    const stationLng =
+      getStationLng(s);
+
+    if (
+      stationLat === null ||
+      stationLng === null
+    ) {
+      return;
+    }
+
+    const distance =
+      distanceKm(
+        lat,
+        lng,
+        stationLat,
+        stationLng
+      );
+
+    if (distance > 25) {
+      return;
+    }
+
+    const price =
+      getFuelPrice(
+        s,
+        fuelType
+      );
+
+    stations.push({
+
+      raw: s,
+
+      name:
+        getStationName(s),
+
+      address:
+        getStationAddress(s),
+
+      province:
+        getStationProvince(s),
+
+      lat:
+        stationLat,
+
+      lng:
+        stationLng,
+
+      distance,
+
+      price,
+
+      fuelType
+
+    });
+
+  });
+
+
+  stations.sort((a, b) => {
+
+    if (
+      a.price > 0 &&
+      b.price <= 0
+    ) {
+      return -1;
+    }
+
+    if (
+      a.price <= 0 &&
+      b.price > 0
+    ) {
+      return 1;
+    }
+
+    return a.distance - b.distance;
+
+  });
+
+
+  return stations.slice(0, 20);
+}
+
+
+async function fetchFuelStations() {
+
+  const response =
+    await fetch(
+      FUEL_API,
+      {
+        method: 'GET',
+        cache: 'no-store'
+      }
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      `HTTP ${response.status}`
+    );
+  }
+
+  return response.json();
+}
+
+
+function renderStationResults() {
+
+  const box =
+    document.getElementById(
+      'stationResults'
+    );
+
+  if (!box) return;
+
+
+  if (!stationSearchResults.length) {
+
+    box.innerHTML = `
+
+      <div class="card">
+
+        <p class="muted">
+          No hemos encontrado gasolineras
+          con este combustible a menos de
+          25 km.
+        </p>
+
+      </div>
+
+    `;
+
+    return;
   }
 
 
-  return avg(consumptions);
+  box.innerHTML = `
+
+    <div class="card">
+
+      <h3>
+        Gasolineras cercanas
+      </h3>
+
+      ${stationSearchResults.map(
+        (s, index) => `
+
+          <div class="list-row">
+
+            <div>
+
+              <strong>
+                ${escapeHtml(s.name)}
+              </strong>
+
+              <small>
+                ${
+                  escapeHtml(
+                    s.address || ''
+                  )
+                }
+              </small>
+
+              <small>
+                ${s.distance.toFixed(1)} km
+              </small>
+
+            </div>
+
+
+            <div
+              style="
+                text-align:right;
+                min-width:90px;
+              "
+            >
+
+              ${
+                s.price > 0
+
+                  ? `
+                    <strong>
+                      ${s.price.toFixed(3)} €/L
+                    </strong>
+                  `
+
+                  : `
+                    <small class="muted">
+                      Precio no disponible
+                    </small>
+                  `
+              }
+
+
+              <br>
+
+
+              <button
+                type="button"
+                onclick="selectFuelStation(${index})"
+              >
+                ${
+                  s.price > 0
+                    ? 'Usar este precio'
+                    : 'Usar estación'
+                }
+              </button>
+
+            </div>
+
+          </div>
+
+        `
+      ).join('')}
+
+    </div>
+
+  `;
+}
+
+
+function findNearbyStations() {
+
+  const status =
+    document.getElementById(
+      'locationStatus'
+    );
+
+  if (status) {
+    status.textContent =
+      '📍 Obteniendo ubicación...';
+  }
+
+
+  stationSearchResults = [];
+  selectedFuelStation = null;
+
+
+  if (
+    !navigator.geolocation
+  ) {
+
+    if (status) {
+      status.textContent =
+        'Este dispositivo no permite obtener la ubicación.';
+    }
+
+    toast(
+      'La geolocalización no está disponible'
+    );
+
+    return;
+
+  }
+
+
+  navigator.geolocation.getCurrentPosition(
+
+    async position => {
+
+      currentFuelLocation = {
+
+        lat:
+          position.coords.latitude,
+
+        lng:
+          position.coords.longitude
+
+      };
+
+
+      if (status) {
+        status.textContent =
+          '🔎 Buscando gasolineras cercanas...';
+      }
+
+
+      const fuelType =
+        document.querySelector(
+          'select[name="fuelType"]'
+        )?.value ||
+        'diesel';
+
+
+      try {
+
+        const data =
+          await fetchFuelStations();
+
+
+        const stations =
+          extractStations(data);
+
+
+        stationSearchResults =
+          prepareNearbyStations(
+            stations,
+            currentFuelLocation.lat,
+            currentFuelLocation.lng,
+            fuelType
+          );
+
+
+        renderStationResults();
+
+
+        if (status) {
+
+          status.textContent =
+            stationSearchResults.length
+
+              ? `📍 ${stationSearchResults.length} gasolineras encontradas`
+
+              : '📍 No hay gasolineras a menos de 25 km';
+
+        }
+
+
+        if (!stationSearchResults.length) {
+
+          toast(
+            'No se han encontrado gasolineras cercanas'
+          );
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          'Error buscando gasolineras:',
+          error
+        );
+
+
+        if (status) {
+
+          status.textContent =
+            '⚠️ No se han podido consultar los precios';
+
+        }
+
+
+        toast(
+          'No se han podido consultar las gasolineras'
+        );
+
+      }
+
+    },
+
+    error => {
+
+      console.warn(
+        'Geolocalización:',
+        error
+      );
+
+
+      if (status) {
+
+        if (error.code === 1) {
+
+          status.textContent =
+            '⚠️ Permiso de ubicación denegado';
+
+        } else {
+
+          status.textContent =
+            '⚠️ No se ha podido obtener tu ubicación';
+
+        }
+
+      }
+
+
+      if (error.code === 1) {
+
+        toast(
+          'Permite la ubicación para buscar gasolineras'
+        );
+
+      } else {
+
+        toast(
+          'No se ha podido obtener la ubicación'
+        );
+
+      }
+
+    },
+
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 300000
+    }
+
+  );
+
+}
+
+
+async function refreshStationFuelType() {
+
+  if (!currentFuelLocation) {
+    return;
+  }
+
+  const fuelType =
+    document.querySelector(
+      'select[name="fuelType"]'
+    )?.value ||
+    'diesel';
+
+
+  try {
+
+    const data =
+      await fetchFuelStations();
+
+    const stations =
+      extractStations(data);
+
+
+    stationSearchResults =
+      prepareNearbyStations(
+        stations,
+        currentFuelLocation.lat,
+        currentFuelLocation.lng,
+        fuelType
+      );
+
+
+    selectedFuelStation = null;
+
+    renderStationResults();
+
+  } catch (error) {
+
+    console.warn(
+      'No se pudo actualizar el combustible:',
+      error
+    );
+
+  }
+
+}
+
+
+function selectFuelStation(index) {
+
+  const station =
+    stationSearchResults[index];
+
+  if (!station) {
+    return;
+  }
+
+
+  selectedFuelStation =
+    station;
+
+
+  const name =
+    document.querySelector(
+      'input[name="stationName"]'
+    );
+
+  const address =
+    document.querySelector(
+      'input[name="stationAddress"]'
+    );
+
+  const price =
+    document.querySelector(
+      'input[name="price"]'
+    );
+
+
+  if (name) {
+    name.value =
+      station.name;
+  }
+
+
+  if (address) {
+    address.value =
+      station.address;
+  }
+
+
+  if (
+    price &&
+    station.price > 0
+  ) {
+
+    price.value =
+      station.price.toFixed(3);
+
+  }
+
+
+  updateFuelAmount();
+
+
+  renderStationResults();
+
+
+  toast(
+    station.price > 0
+      ? `Precio ${station.price.toFixed(3)} €/L seleccionado`
+      : 'Gasolinera seleccionada'
+  );
+
+}
+
+
+function updateFuelAmount() {
+
+  const form =
+    document.getElementById(
+      'fuelForm'
+    );
+
+  if (!form) return;
+
+
+  const liters =
+    Number(
+      form.elements.liters?.value || 0
+    );
+
+  const price =
+    Number(
+      form.elements.price?.value || 0
+    );
+
+  const amount =
+    form.elements.amount;
+
+
+  if (
+    amount &&
+    liters > 0 &&
+    price > 0
+  ) {
+
+    amount.value =
+      (liters * price).toFixed(2);
+
+  }
+
 }
 
 
@@ -815,7 +1820,7 @@ function vehicles() {
 
 
 /* =========================================================
-   FICHA DEL VEHÍCULO
+   FICHA VEHÍCULO
 ========================================================= */
 
 function vehicleDetail(id) {
@@ -828,7 +1833,6 @@ function vehicleDetail(id) {
 
 
   currentPage = 'vehicleDetail';
-
   currentVehicleId = id;
 
 
@@ -994,54 +1998,23 @@ function vehicleDetail(id) {
         <div class="grid stats-grid">
 
           <div class="card stat">
-
-            <strong>
-              ${eur(totalCost)}
-            </strong>
-
-            <span>
-              Coste total
-            </span>
-
+            <strong>${eur(totalCost)}</strong>
+            <span>Coste total</span>
           </div>
 
-
           <div class="card stat">
-
-            <strong>
-              ${eur(totalFuel)}
-            </strong>
-
-            <span>
-              Combustible
-            </span>
-
+            <strong>${eur(totalFuel)}</strong>
+            <span>Combustible</span>
           </div>
 
-
           <div class="card stat">
-
-            <strong>
-              ${eur(totalMaint)}
-            </strong>
-
-            <span>
-              Mantenimiento
-            </span>
-
+            <strong>${eur(totalMaint)}</strong>
+            <span>Mantenimiento</span>
           </div>
 
-
           <div class="card stat">
-
-            <strong>
-              ${eur(totalTripCost)}
-            </strong>
-
-            <span>
-              Viajes
-            </span>
-
+            <strong>${eur(totalTripCost)}</strong>
+            <span>Viajes</span>
           </div>
 
         </div>
@@ -1053,19 +2026,14 @@ function vehicleDetail(id) {
 
             <div>
 
-              <h3>
-                🔎 ITV
-              </h3>
+              <h3>🔎 ITV</h3>
 
               <p class="muted">
-
                 ${itv.icon}
                 ${itv.label}
-
               </p>
 
             </div>
-
 
             <button
               type="button"
@@ -1080,28 +2048,17 @@ function vehicleDetail(id) {
           <div class="detail-grid">
 
             <div>
-
-              <span>
-                Última ITV
-              </span>
-
+              <span>Última ITV</span>
               <strong>
                 ${formatDateES(v.itvLast)}
               </strong>
-
             </div>
 
-
             <div>
-
-              <span>
-                Próxima ITV
-              </span>
-
+              <span>Próxima ITV</span>
               <strong>
                 ${formatDateES(v.itvNext)}
               </strong>
-
             </div>
 
           </div>
@@ -1111,71 +2068,40 @@ function vehicleDetail(id) {
 
         <div class="card">
 
-          <h3>
-            Datos del vehículo
-          </h3>
-
+          <h3>Datos del vehículo</h3>
 
           <div class="detail-grid">
 
             <div>
-
-              <span>
-                Marca
-              </span>
-
+              <span>Marca</span>
               <strong>
                 ${escapeHtml(v.brand || '-')}
               </strong>
-
             </div>
 
-
             <div>
-
-              <span>
-                Modelo
-              </span>
-
+              <span>Modelo</span>
               <strong>
                 ${escapeHtml(v.model || '-')}
               </strong>
-
             </div>
 
-
             <div>
-
-              <span>
-                Matrícula
-              </span>
-
+              <span>Matrícula</span>
               <strong>
                 ${escapeHtml(v.plate || '-')}
               </strong>
-
             </div>
 
-
             <div>
-
-              <span>
-                Año
-              </span>
-
+              <span>Año</span>
               <strong>
                 ${escapeHtml(v.year || '-')}
               </strong>
-
             </div>
 
-
             <div>
-
-              <span>
-                Consumo indicado
-              </span>
-
+              <span>Consumo indicado</span>
               <strong>
                 ${
                   v.consumption
@@ -1183,16 +2109,10 @@ function vehicleDetail(id) {
                     : '-'
                 }
               </strong>
-
             </div>
 
-
             <div>
-
-              <span>
-                Consumo calculado
-              </span>
-
+              <span>Consumo calculado</span>
               <strong>
                 ${
                   consumption
@@ -1200,7 +2120,6 @@ function vehicleDetail(id) {
                     : '-'
                 }
               </strong>
-
             </div>
 
           </div>
@@ -1210,103 +2129,66 @@ function vehicleDetail(id) {
 
         <div class="card">
 
-          <h3>
-            Costes por año
-          </h3>
+          <h3>Costes por año</h3>
 
           ${
             years.length
+              ? years.map(year => `
 
-              ? years
-                  .map(year => `
+                  <div class="list-row">
 
-                    <div class="list-row">
+                    <strong>${year}</strong>
 
-                      <div>
-                        <strong>
-                          ${year}
-                        </strong>
-                      </div>
+                    <strong>
+                      ${eur(yearly[year])}
+                    </strong>
 
-                      <strong>
-                        ${eur(yearly[year])}
-                      </strong>
+                  </div>
 
-                    </div>
-
-                  `)
-                  .join('')
-
+                `).join('')
               : `
-
                 <p class="muted">
                   Todavía no hay costes registrados.
                 </p>
-
               `
           }
 
         </div>
 
 
+        ${fuelStatsCard(id)}
+
+        ${fuelPriceEvolution(id)}
+
+
         <div class="card">
 
-          <h3>
-            Resumen
-          </h3>
-
+          <h3>Resumen</h3>
 
           <div class="detail-grid">
 
             <div>
-
-              <span>
-                Litros repostados
-              </span>
-
+              <span>Litros repostados</span>
               <strong>
                 ${totalLiters.toFixed(1)} L
               </strong>
-
             </div>
 
-
             <div>
-
-              <span>
-                Viajes registrados
-              </span>
-
-              <strong>
-                ${trips.length}
-              </strong>
-
+              <span>Viajes registrados</span>
+              <strong>${trips.length}</strong>
             </div>
 
-
             <div>
-
-              <span>
-                Mantenimientos
-              </span>
-
-              <strong>
-                ${maint.length}
-              </strong>
-
+              <span>Mantenimientos</span>
+              <strong>${maint.length}</strong>
             </div>
 
-
             <div>
-
-              <span>
-                Km de viajes
-              </span>
-
+              <span>Km de viajes</span>
               <strong>
                 ${totalTripKm.toLocaleString('es-ES')} km
               </strong>
-
             </div>
 
           </div>
@@ -1318,9 +2200,7 @@ function vehicleDetail(id) {
 
           <div class="section-head">
 
-            <h3>
-              Mantenimientos
-            </h3>
+            <h3>Mantenimientos</h3>
 
             <button
               type="button"
@@ -1334,79 +2214,70 @@ function vehicleDetail(id) {
 
           ${
             maint.length
+              ? maint.map(m => `
 
-              ? maint
-                  .map(m => `
+                  <div class="list-row">
 
-                    <div class="list-row">
+                    <div>
 
-                      <div>
+                      <strong>
+                        ${escapeHtml(
+                          m.type ||
+                          'Mantenimiento'
+                        )}
+                      </strong>
 
-                        <strong>
-                          ${escapeHtml(
-                            m.type ||
-                            'Mantenimiento'
-                          )}
-                        </strong>
-
-                        <small>
-                          ${m.date || ''}
-                          ${
-                            m.km
-                              ? ` · ${Number(m.km).toLocaleString('es-ES')} km`
-                              : ''
-                          }
-                        </small>
-
+                      <small>
+                        ${m.date || ''}
                         ${
-                          m.notes
-                            ? `
-                              <small>
-                                ${escapeHtml(m.notes)}
-                              </small>
-                            `
+                          m.km
+                            ? ` · ${Number(m.km).toLocaleString('es-ES')} km`
                             : ''
                         }
+                      </small>
 
-                      </div>
-
-
-                      <div class="row-actions">
-
-                        <strong>
-                          ${eur(m.amount)}
-                        </strong>
-
-
-                        <button
-                          type="button"
-                          onclick="maintenanceForm('${m.id}')"
-                        >
-                          ✏️
-                        </button>
-
-
-                        <button
-                          class="danger"
-                          type="button"
-                          onclick="deleteMaintenance('${m.id}')"
-                        >
-                          🗑️
-                        </button>
-
-                      </div>
+                      ${
+                        m.notes
+                          ? `
+                            <small>
+                              ${escapeHtml(m.notes)}
+                            </small>
+                          `
+                          : ''
+                      }
 
                     </div>
 
-                  `)
-                  .join('')
+                    <div class="row-actions">
 
+                      <strong>
+                        ${eur(m.amount)}
+                      </strong>
+
+                      <button
+                        type="button"
+                        onclick="maintenanceForm('${m.id}')"
+                      >
+                        ✏️
+                      </button>
+
+                      <button
+                        class="danger"
+                        type="button"
+                        onclick="deleteMaintenance('${m.id}')"
+                      >
+                        🗑️
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                `).join('')
               : `
-
                 <p class="muted">
                   No hay mantenimientos registrados.
                 </p>
-
               `
           }
 
@@ -1415,51 +2286,53 @@ function vehicleDetail(id) {
 
         <div class="card">
 
-          <h3>
-            Repostajes
-          </h3>
+          <h3>Repostajes</h3>
 
           ${
             fuel.length
+              ? fuel.map(f => `
 
-              ? fuel
-                  .map(f => `
+                  <div class="list-row">
 
-                    <div class="list-row">
-
-                      <div>
-
-                        <strong>
-                          ${f.date || ''}
-                        </strong>
-
-                        <small>
-                          ${fuelLiters(f).toFixed(2)} L
-                          ${
-                            f.km
-                              ? ` · ${Number(f.km).toLocaleString('es-ES')} km`
-                              : ''
-                          }
-                        </small>
-
-                      </div>
-
+                    <div>
 
                       <strong>
-                        ${eur(fuelAmount(f))}
+                        ${f.date || ''}
                       </strong>
+
+                      <small>
+                        ${fuelLiters(f).toFixed(2)} L
+                        ${
+                          f.km
+                            ? ` · ${Number(f.km).toLocaleString('es-ES')} km`
+                            : ''
+                        }
+                      </small>
+
+                      ${
+                        f.stationName
+                          ? `
+                            <small>
+                              ⛽
+                              ${escapeHtml(f.stationName)}
+                            </small>
+                          `
+                          : ''
+                      }
 
                     </div>
 
-                  `)
-                  .join('')
+                    <strong>
+                      ${eur(fuelAmount(f))}
+                    </strong>
 
+                  </div>
+
+                `).join('')
               : `
-
                 <p class="muted">
                   No hay repostajes registrados.
                 </p>
-
               `
           }
 
@@ -1468,55 +2341,46 @@ function vehicleDetail(id) {
 
         <div class="card">
 
-          <h3>
-            Viajes
-          </h3>
+          <h3>Viajes</h3>
 
           ${
             trips.length
+              ? trips.map(t => `
 
-              ? trips
-                  .map(t => `
+                  <div class="list-row">
 
-                    <div class="list-row">
-
-                      <div>
-
-                        <strong>
-                          ${escapeHtml(
-                            t.name ||
-                            t.destination ||
-                            'Viaje'
-                          )}
-                        </strong>
-
-                        <small>
-                          ${t.date || ''}
-                          ${
-                            t.km
-                              ? ` · ${Number(t.km).toLocaleString('es-ES')} km`
-                              : ''
-                          }
-                        </small>
-
-                      </div>
-
+                    <div>
 
                       <strong>
-                        ${eur(t.cost)}
+                        ${escapeHtml(
+                          t.name ||
+                          t.destination ||
+                          'Viaje'
+                        )}
                       </strong>
+
+                      <small>
+                        ${t.date || ''}
+                        ${
+                          t.km
+                            ? ` · ${Number(t.km).toLocaleString('es-ES')} km`
+                            : ''
+                        }
+                      </small>
 
                     </div>
 
-                  `)
-                  .join('')
+                    <strong>
+                      ${eur(t.cost)}
+                    </strong>
 
+                  </div>
+
+                `).join('')
               : `
-
                 <p class="muted">
                   No hay viajes registrados.
                 </p>
-
               `
           }
 
@@ -1540,13 +2404,9 @@ function vehicleDetail(id) {
 
 function itvForm(id) {
 
-  const v =
-    vehicle(id);
+  const v = vehicle(id);
 
-
-  if (!v) {
-    return;
-  }
+  if (!v) return;
 
 
   fullScreenForm(`
@@ -1563,12 +2423,9 @@ function itvForm(id) {
           ← Volver
         </button>
 
-
         <div>
 
-          <h1>
-            ITV
-          </h1>
+          <h1>ITV</h1>
 
           <p class="muted">
             ${escapeHtml(
@@ -1616,20 +2473,11 @@ function itvForm(id) {
 
         <div class="card">
 
-          <h3>
-            Estado actual
-          </h3>
+          <h3>Estado actual</h3>
 
           <p class="muted">
-
-            ${
-              itvInfo(v).icon
-            }
-
-            ${
-              itvInfo(v).label
-            }
-
+            ${itvInfo(v).icon}
+            ${itvInfo(v).label}
           </p>
 
         </div>
@@ -1644,7 +2492,6 @@ function itvForm(id) {
           >
             Cancelar
           </button>
-
 
           <button
             type="submit"
@@ -1670,18 +2517,14 @@ function itvForm(id) {
 
         e.preventDefault();
 
-
         const fd =
           new FormData(e.target);
-
 
         const last =
           fd.get('itvLast') || '';
 
-
         const next =
           fd.get('itvNext') || '';
-
 
         if (
           last &&
@@ -1696,30 +2539,17 @@ function itvForm(id) {
           return;
         }
 
-
-        v.itvLast =
-          last;
-
-        v.itvNext =
-          next;
-
-
-        v.updatedAt =
-          Date.now();
-
+        v.itvLast = last;
+        v.itvNext = next;
+        v.updatedAt = Date.now();
 
         save();
 
         closeModal();
 
-        toast(
-          'ITV actualizada'
-        );
+        toast('ITV actualizada');
 
-
-        vehicleDetail(
-          v.id
-        );
+        vehicleDetail(v.id);
 
       }
     );
@@ -1734,7 +2564,6 @@ function itvForm(id) {
 function vehicleForm(record = null) {
 
   const editing = !!record;
-
   const v = record || {};
 
 
@@ -1751,7 +2580,6 @@ function vehicleForm(record = null) {
         >
           ← Volver
         </button>
-
 
         <div>
 
@@ -1782,7 +2610,6 @@ function vehicleForm(record = null) {
       >
 
         <label>
-
           Nombre
 
           <input
@@ -1790,48 +2617,40 @@ function vehicleForm(record = null) {
             value="${escapeAttr(v.name || '')}"
             placeholder="Ej. Autocaravana"
           >
-
         </label>
 
 
         <label>
-
           Marca
 
           <input
             name="brand"
             value="${escapeAttr(v.brand || '')}"
           >
-
         </label>
 
 
         <label>
-
           Modelo
 
           <input
             name="model"
             value="${escapeAttr(v.model || '')}"
           >
-
         </label>
 
 
         <label>
-
           Matrícula
 
           <input
             name="plate"
             value="${escapeAttr(v.plate || '')}"
           >
-
         </label>
 
 
         <label>
-
           Año
 
           <input
@@ -1839,12 +2658,10 @@ function vehicleForm(record = null) {
             name="year"
             value="${escapeAttr(v.year || '')}"
           >
-
         </label>
 
 
         <label>
-
           Consumo indicado (L/100 km)
 
           <input
@@ -1853,15 +2670,12 @@ function vehicleForm(record = null) {
             name="consumption"
             value="${escapeAttr(v.consumption || '')}"
           >
-
         </label>
 
 
         <div class="card">
 
-          <h3>
-            ITV
-          </h3>
+          <h3>ITV</h3>
 
           <p class="muted">
             Puedes dejar estas fechas vacías
@@ -1939,14 +2753,11 @@ function vehicleForm(record = null) {
         const fd =
           new FormData(e.target);
 
-
         const itvLast =
           fd.get('itvLast') || '';
 
-
         const itvNext =
           fd.get('itvNext') || '';
-
 
         if (
           itvLast &&
@@ -1960,7 +2771,6 @@ function vehicleForm(record = null) {
 
           return;
         }
-
 
         const data = {
 
@@ -1985,7 +2795,6 @@ function vehicleForm(record = null) {
             ),
 
           itvLast,
-
           itvNext
 
         };
@@ -2023,13 +2832,9 @@ function vehicleForm(record = null) {
 
 
         if (editing) {
-
           vehicleDetail(v.id);
-
         } else {
-
           render('vehicles');
-
         }
 
       }
@@ -2042,9 +2847,7 @@ function editVehicle(id) {
 
   const v = vehicle(id);
 
-  if (!v) {
-    return;
-  }
+  if (!v) return;
 
   vehicleForm(v);
 }
@@ -2054,9 +2857,7 @@ function delVehicle(id) {
 
   const v = vehicle(id);
 
-  if (!v) {
-    return;
-  }
+  if (!v) return;
 
 
   if (
@@ -2076,9 +2877,7 @@ function delVehicle(id) {
 
   save();
 
-  toast(
-    'Vehículo archivado'
-  );
+  toast('Vehículo archivado');
 
   go('vehicles');
 }
@@ -2117,6 +2916,11 @@ function fuelPage() {
       </div>
 
 
+      ${fuelStatsCard()}
+
+      ${fuelPriceEvolution()}
+
+
       <div class="stack">
 
         ${
@@ -2127,7 +2931,6 @@ function fuelPage() {
 
                   const v =
                     vehicle(f.vehicleId);
-
 
                   return `
 
@@ -2154,13 +2957,28 @@ function fuelPage() {
                           </small>
 
                           <p>
+
                             ${fuelLiters(f).toFixed(2)} L
+
                             ${
                               f.price
                                 ? ` · ${Number(f.price).toFixed(3)} €/L`
                                 : ''
                             }
+
                           </p>
+
+
+                          ${
+                            f.stationName
+                              ? `
+                                <small>
+                                  ⛽
+                                  ${escapeHtml(f.stationName)}
+                                </small>
+                              `
+                              : ''
+                          }
 
                         </div>
 
@@ -2241,9 +3059,23 @@ function fuelForm(id = null) {
         today(),
 
       full:
-        true
+        true,
+
+      fuelType:
+        'diesel',
+
+      stationName:
+        '',
+
+      stationAddress:
+        ''
 
     };
+
+
+  stationSearchResults = [];
+  currentFuelLocation = null;
+  selectedFuelStation = null;
 
 
   fullScreenForm(`
@@ -2353,6 +3185,106 @@ function fuelForm(id = null) {
 
         <label>
 
+          Tipo de combustible
+
+          <select
+            name="fuelType"
+          >
+
+            <option
+              value="diesel"
+              ${f.fuelType === 'diesel' ? 'selected' : ''}
+            >
+              Diésel
+            </option>
+
+            <option
+              value="gasolina95"
+              ${f.fuelType === 'gasolina95' ? 'selected' : ''}
+            >
+              Gasolina 95
+            </option>
+
+            <option
+              value="gasolina98"
+              ${f.fuelType === 'gasolina98' ? 'selected' : ''}
+            >
+              Gasolina 98
+            </option>
+
+          </select>
+
+        </label>
+
+
+        <div class="card">
+
+          <h3>
+            ⛽ Precio automático
+          </h3>
+
+          <p class="muted">
+            Busca las estaciones cercanas y
+            selecciona una para rellenar
+            automáticamente el precio.
+          </p>
+
+
+          <button
+            type="button"
+            class="primary"
+            onclick="findNearbyStations()"
+          >
+            📍 Buscar gasolineras cercanas
+          </button>
+
+
+          <p
+            id="locationStatus"
+            class="muted"
+          >
+            Pulsa el botón para buscar
+            gasolineras.
+          </p>
+
+        </div>
+
+
+        <div
+          id="stationResults"
+        ></div>
+
+
+        <label>
+
+          Gasolinera
+
+          <input
+            type="text"
+            name="stationName"
+            value="${escapeAttr(f.stationName || '')}"
+            placeholder="Opcional"
+          >
+
+        </label>
+
+
+        <label>
+
+          Dirección gasolinera
+
+          <input
+            type="text"
+            name="stationAddress"
+            value="${escapeAttr(f.stationAddress || '')}"
+            placeholder="Opcional"
+          >
+
+        </label>
+
+
+        <label>
+
           Litros
 
           <input
@@ -2443,111 +3375,163 @@ function fuelForm(id = null) {
   `);
 
 
-  document
-    .getElementById('fuelForm')
-    .addEventListener(
-      'submit',
-      e => {
-
-        e.preventDefault();
+  const form =
+    document.getElementById(
+      'fuelForm'
+    );
 
 
-        const fd =
-          new FormData(e.target);
+  form.addEventListener(
+    'input',
+    event => {
 
+      if (
+        event.target.name === 'liters' ||
+        event.target.name === 'price'
+      ) {
 
-        let amount =
-          Number(
-            fd.get('amount') || 0
-          );
-
-
-        const liters =
-          Number(
-            fd.get('liters') || 0
-          );
-
-
-        const price =
-          Number(
-            fd.get('price') || 0
-          );
-
-
-        if (
-          !amount &&
-          liters &&
-          price
-        ) {
-
-          amount =
-            liters * price;
-
-        }
-
-
-        const data = {
-
-          vehicleId:
-            fd.get('vehicleId'),
-
-          date:
-            fd.get('date'),
-
-          km:
-            Number(
-              fd.get('km') || 0
-            ),
-
-          liters,
-
-          price,
-
-          amount,
-
-          full:
-            fd.get('full') === 'on'
-
-        };
-
-
-        if (editing) {
-
-          Object.assign(
-            record,
-            data
-          );
-
-          toast(
-            'Repostaje actualizado'
-          );
-
-        } else {
-
-          db.fuel.push({
-
-            id:
-              uid('f_'),
-
-            ...data
-
-          });
-
-          toast(
-            'Repostaje guardado'
-          );
-
-        }
-
-
-        save();
-
-        closeModal();
-
-        render('fuel');
+        updateFuelAmount();
 
       }
-    );
+
+    }
+  );
+
+
+  form.elements.fuelType.addEventListener(
+    'change',
+    () => {
+
+      if (currentFuelLocation) {
+        refreshStationFuelType();
+      }
+
+    }
+  );
+
+
+  form.addEventListener(
+    'submit',
+    e => {
+
+      e.preventDefault();
+
+
+      const fd =
+        new FormData(e.target);
+
+
+      const liters =
+        Number(
+          fd.get('liters') || 0
+        );
+
+
+      const price =
+        Number(
+          fd.get('price') || 0
+        );
+
+
+      let amount =
+        Number(
+          fd.get('amount') || 0
+        );
+
+
+      if (
+        !amount &&
+        liters &&
+        price
+      ) {
+
+        amount =
+          liters * price;
+
+      }
+
+
+      const data = {
+
+        vehicleId:
+          fd.get('vehicleId'),
+
+        date:
+          fd.get('date'),
+
+        km:
+          Number(
+            fd.get('km') || 0
+          ),
+
+        fuelType:
+          fd.get('fuelType') || 'diesel',
+
+        liters,
+
+        price,
+
+        amount,
+
+        full:
+          fd.get('full') === 'on',
+
+        stationName:
+          fd.get('stationName') || '',
+
+        stationAddress:
+          fd.get('stationAddress') || '',
+
+        stationLat:
+          selectedFuelStation?.lat ||
+          record?.stationLat ||
+          '',
+
+        stationLng:
+          selectedFuelStation?.lng ||
+          record?.stationLng ||
+          ''
+
+      };
+
+
+      if (editing) {
+
+        Object.assign(
+          record,
+          data
+        );
+
+        toast(
+          'Repostaje actualizado'
+        );
+
+      } else {
+
+        db.fuel.push({
+
+          id:
+            uid('f_'),
+
+          ...data
+
+        });
+
+        toast(
+          'Repostaje guardado'
+        );
+
+      }
+
+
+      save();
+
+      closeModal();
+
+      render('fuel');
+
+    }
+  );
 
 }
 
@@ -3587,9 +4571,7 @@ function deleteTrip(id) {
     );
 
 
-  if (!trip) {
-    return;
-  }
+  if (!trip) return;
 
 
   const title =
@@ -3910,9 +4892,7 @@ document.addEventListener(
       event.target.files?.[0];
 
 
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
 
     const reader =
@@ -3976,7 +4956,6 @@ document.addEventListener(
 
         migrateData();
 
-
         save();
 
 
@@ -4023,6 +5002,35 @@ function simulator() {
     <form
       id="simulatorForm"
     >
+
+      <label>
+
+        Vehículo
+
+        <select
+          name="vehicleId"
+        >
+
+          <option value="">
+            Introducir datos manualmente
+          </option>
+
+          ${db.vehicles.map(v => `
+
+            <option value="${v.id}">
+              ${escapeHtml(
+                v.name ||
+                v.brand ||
+                'Vehículo'
+              )}
+            </option>
+
+          `).join('')}
+
+        </select>
+
+      </label>
+
 
       <label>
 
@@ -4097,82 +5105,142 @@ function simulator() {
   `);
 
 
-  document
-    .getElementById(
+  const form =
+    document.getElementById(
       'simulatorForm'
-    )
-    .addEventListener(
-      'submit',
-      e => {
-
-        e.preventDefault();
+    );
 
 
-        const fd =
-          new FormData(e.target);
+  const vehicleSelect =
+    form.elements.vehicleId;
 
 
-        const km =
-          Number(
-            fd.get('km')
-          );
+  const consumptionInput =
+    form.elements.consumption;
 
 
-        const consumption =
-          Number(
-            fd.get('consumption')
-          );
+  const priceInput =
+    form.elements.price;
 
 
-        const price =
-          Number(
-            fd.get('price')
-          );
+  vehicleSelect.addEventListener(
+    'change',
+    () => {
+
+      const id =
+        vehicleSelect.value;
+
+      if (!id) return;
 
 
-        const liters =
-          km *
-          consumption /
-          100;
+      const v =
+        vehicle(id);
 
 
-        const cost =
-          liters *
-          price;
+      const learned =
+        learnedConsumption(id);
 
 
-        document
-          .getElementById(
-            'simulatorResult'
-          )
-          .innerHTML = `
+      const stats =
+        fuelStatistics(id);
 
-            <div class="result-box">
 
-              <strong>
-                Resultado
-              </strong>
+      if (learned) {
 
-              <p>
-                Combustible:
-                <strong>
-                  ${liters.toFixed(1)} L
-                </strong>
-              </p>
+        consumptionInput.value =
+          learned.toFixed(2);
 
-              <p>
-                Coste:
-                <strong>
-                  ${eur(cost)}
-                </strong>
-              </p>
+      } else if (v?.consumption) {
 
-            </div>
-
-          `;
+        consumptionInput.value =
+          Number(v.consumption).toFixed(2);
 
       }
-    );
+
+
+      if (stats.averagePrice) {
+
+        priceInput.value =
+          stats.averagePrice.toFixed(3);
+
+      }
+
+    }
+  );
+
+
+  form.addEventListener(
+    'submit',
+    e => {
+
+      e.preventDefault();
+
+
+      const fd =
+        new FormData(e.target);
+
+
+      const km =
+        Number(
+          fd.get('km')
+        );
+
+
+      const consumption =
+        Number(
+          fd.get('consumption')
+        );
+
+
+      const price =
+        Number(
+          fd.get('price')
+        );
+
+
+      const liters =
+        km *
+        consumption /
+        100;
+
+
+      const cost =
+        liters *
+        price;
+
+
+      document
+        .getElementById(
+          'simulatorResult'
+        )
+        .innerHTML = `
+
+          <div class="result-box">
+
+            <strong>
+              Resultado
+            </strong>
+
+            <p>
+              Combustible:
+              <strong>
+                ${liters.toFixed(1)} L
+              </strong>
+            </p>
+
+            <p>
+              Coste:
+              <strong>
+                ${eur(cost)}
+              </strong>
+            </p>
+
+          </div>
+
+        `;
+
+    }
+  );
 
 }
 
@@ -4266,9 +5334,7 @@ function render(page) {
     );
 
 
-  if (!app) {
-    return;
-  }
+  if (!app) return;
 
 
   currentPage =
@@ -4373,7 +5439,6 @@ function updateNav(page) {
 
 
 function openVehicleDetail(id) {
-
   vehicleDetail(id);
 }
 
