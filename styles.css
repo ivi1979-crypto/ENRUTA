@@ -1,1 +1,768 @@
-:root{--bg:#f5f7fb;--card:#fff;--ink:#101828;--muted:#667085;--accent:#1264e5;--line:#e4e7ec;--good:#087443}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px system-ui,-apple-system,Segoe UI,sans-serif;padding-bottom:78px}header{position:sticky;top:0;z-index:4;background:#0b1220;color:#fff;padding:16px 18px;display:flex;justify-content:space-between;align-items:center}.brand{font-size:25px;font-weight:850;letter-spacing:.06em}header small{opacity:.7}.ghost{background:transparent;border:1px solid #ffffff44;color:#fff;border-radius:10px;padding:9px 12px}main{max-width:720px;margin:auto;padding:18px}.hero{background:linear-gradient(135deg,#0b1220,#16376e);color:#fff;border-radius:20px;padding:20px;margin-bottom:16px}.hero h1{margin:0 0 5px;font-size:25px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:12px;box-shadow:0 3px 12px #1018280a}.stat b{display:block;font-size:25px}.muted,small{color:var(--muted)}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:0;background:var(--accent);color:white;border-radius:11px;padding:11px 14px;font-weight:650}.btn.secondary{background:#eef4ff;color:#174ea6}.btn.danger{background:#fee4e2;color:#b42318}.row{display:flex;justify-content:space-between;gap:10px;align-items:center}.list{display:grid;gap:9px}.item{padding:13px;border:1px solid var(--line);border-radius:13px;background:#fff}.item h3{margin:0 0 4px}.form{display:grid;gap:10px}.form label{font-weight:650}.form input,.form select,.form textarea{width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:10px;background:#fff;font:inherit}.form textarea{min-height:80px}.pill{display:inline-block;padding:4px 8px;border-radius:99px;background:#eef4ff;color:#174ea6;font-size:12px}.empty{text-align:center;padding:30px 10px;color:var(--muted)}nav{position:fixed;bottom:0;left:0;right:0;height:70px;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);z-index:5}nav button{border:0;background:none;color:#667085;font-size:20px}nav button span{display:block;font-size:11px}nav button.active{color:var(--accent);font-weight:750}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}}
+:root {
+  --bg: #f5f7fb;
+  --card: #fff;
+  --ink: #101828;
+  --muted: #667085;
+  --accent: #1264e5;
+  --accent-dark: #0b4fc0;
+  --line: #e4e7ec;
+  --good: #087443;
+  --navy: #0b1220;
+}
+
+
+* {
+  box-sizing: border-box;
+}
+
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font:
+    15px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  padding-bottom: 78px;
+}
+
+
+/* =========================
+   CABECERA / LOGO
+   ========================= */
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+
+  background: var(--navy);
+  color: #fff;
+
+  padding:
+    14px
+    18px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  box-shadow:
+    0 2px 10px #0002;
+}
+
+
+.brand-area {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+
+.brand-logo {
+  position: relative;
+
+  display: inline-flex;
+  align-items: center;
+
+  width: fit-content;
+
+  font-size: 25px;
+  font-weight: 900;
+
+  letter-spacing: .055em;
+
+  line-height: 1;
+}
+
+
+.brand-text {
+  position: relative;
+  z-index: 2;
+}
+
+
+.brand-route {
+  position: absolute;
+
+  left: 1px;
+  right: 2px;
+  bottom: -5px;
+
+  height: 4px;
+
+  border-radius: 99px;
+
+  background:
+    linear-gradient(
+      90deg,
+      #1264e5 0%,
+      #4c9aff 55%,
+      #1264e5 100%
+    );
+
+  transform:
+    skewX(-25deg);
+
+  opacity: .95;
+}
+
+
+.brand-route::after {
+  content: "";
+
+  position: absolute;
+
+  right: 7px;
+  top: -3px;
+
+  width: 10px;
+  height: 10px;
+
+  border-radius: 50%;
+
+  background: #4c9aff;
+
+  box-shadow:
+    0 0 0 3px #0b1220;
+}
+
+
+header small {
+  opacity: .7;
+}
+
+
+.ghost {
+  background: transparent;
+
+  border:
+    1px solid
+    #ffffff44;
+
+  color: #fff;
+
+  border-radius: 10px;
+
+  padding:
+    9px
+    12px;
+}
+
+
+/* =========================
+   CONTENIDO
+   ========================= */
+
+main {
+  max-width: 720px;
+
+  margin:
+    0 auto;
+
+  padding:
+    18px;
+}
+
+
+.hero {
+  background:
+    linear-gradient(
+      135deg,
+      #0b1220,
+      #16376e
+    );
+
+  color: #fff;
+
+  border-radius: 20px;
+
+  padding: 20px;
+
+  margin-bottom: 16px;
+
+  box-shadow:
+    0 8px 25px #0b122018;
+}
+
+
+.hero h1 {
+  margin:
+    0 0 7px;
+
+  font-size: 25px;
+
+  line-height: 1.15;
+}
+
+
+.hero p {
+  margin:
+    0 0 16px;
+
+  opacity: .82;
+}
+
+
+.grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 12px;
+}
+
+
+.card {
+  background: var(--card);
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius: 16px;
+
+  padding: 15px;
+
+  margin-bottom: 12px;
+
+  box-shadow:
+    0 3px 12px
+    #1018280a;
+}
+
+
+.card h2 {
+  margin-top: 0;
+}
+
+
+.stat b {
+  display: block;
+
+  font-size: 25px;
+
+  margin-top: 3px;
+}
+
+
+.muted,
+small {
+  color: var(--muted);
+}
+
+
+.actions {
+  display: flex;
+
+  gap: 8px;
+
+  flex-wrap: wrap;
+}
+
+
+.btn {
+  border: 0;
+
+  background: var(--accent);
+
+  color: white;
+
+  border-radius: 11px;
+
+  padding:
+    11px
+    14px;
+
+  font-weight: 650;
+
+  cursor: pointer;
+
+  transition:
+    transform .1s ease,
+    background .15s ease;
+}
+
+
+.btn:active {
+  transform:
+    scale(.97);
+}
+
+
+.btn:hover {
+  background:
+    var(--accent-dark);
+}
+
+
+.btn.secondary {
+  background: #eef4ff;
+
+  color: #174ea6;
+}
+
+
+.btn.secondary:hover {
+  background: #dfeaff;
+}
+
+
+.btn.danger {
+  background: #fee4e2;
+
+  color: #b42318;
+}
+
+
+.btn.danger:hover {
+  background: #fdd4d0;
+}
+
+
+/* =========================
+   FILAS Y LISTAS
+   ========================= */
+
+.row {
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  gap: 10px;
+
+  align-items: center;
+}
+
+
+.page-title {
+  margin-bottom: 15px;
+}
+
+
+.list {
+  display: grid;
+
+  gap: 9px;
+}
+
+
+.item {
+  padding: 13px;
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius: 13px;
+
+  background: #fff;
+}
+
+
+.item h3 {
+  margin:
+    0 0 4px;
+}
+
+
+.item hr {
+  border: 0;
+
+  border-top:
+    1px solid
+    var(--line);
+
+  margin:
+    12px 0;
+}
+
+
+.vehicle-click {
+  cursor: pointer;
+
+  border-radius: 10px;
+
+  transition:
+    background .15s ease;
+}
+
+
+.vehicle-click:hover {
+  background:
+    #f5f8ff;
+}
+
+
+.vehicle-summary {
+  padding:
+    9px 0;
+
+  border-top:
+    1px solid
+    #eee;
+}
+
+
+.more-vehicle {
+  margin:
+    4px;
+}
+
+
+.pill {
+  display: inline-block;
+
+  padding:
+    4px 8px;
+
+  border-radius: 99px;
+
+  background: #eef4ff;
+
+  color: #174ea6;
+
+  font-size: 12px;
+}
+
+
+.empty {
+  text-align: center;
+
+  padding:
+    30px 10px;
+
+  color: var(--muted);
+}
+
+
+/* =========================
+   FORMULARIOS
+   ========================= */
+
+.form {
+  display: grid;
+
+  gap: 10px;
+}
+
+
+.form label {
+  font-weight: 650;
+
+  display: grid;
+
+  gap: 5px;
+}
+
+
+.form input,
+.form select,
+.form textarea {
+  width: 100%;
+
+  padding: 11px;
+
+  border:
+    1px solid
+    #d0d5dd;
+
+  border-radius: 10px;
+
+  background: #fff;
+
+  color: var(--ink);
+
+  font: inherit;
+
+  outline: none;
+}
+
+
+.form input:focus,
+.form select:focus,
+.form textarea:focus {
+  border-color:
+    var(--accent);
+
+  box-shadow:
+    0 0 0 3px
+    #1264e51a;
+}
+
+
+.form textarea {
+  min-height: 80px;
+
+  resize: vertical;
+}
+
+
+.form .check-label {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+}
+
+
+.form .check-label input {
+  width: auto;
+}
+
+
+.two {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 10px;
+}
+
+
+/* =========================
+   MODAL
+   ========================= */
+
+.enruta-modal {
+  position: fixed;
+
+  inset: 0;
+
+  background:
+    #0008;
+
+  z-index: 2500;
+
+  padding: 20px;
+
+  display: grid;
+
+  place-items: center;
+}
+
+
+.modal-card {
+  width:
+    min(600px, 100%);
+
+  max-height:
+    90vh;
+
+  overflow:
+    auto;
+
+  background:
+    var(--card);
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius:
+    18px;
+
+  padding:
+    16px;
+
+  box-shadow:
+    0 20px 60px
+    #0005;
+}
+
+
+.modal-card > .row {
+  margin-bottom:
+    14px;
+}
+
+
+.modal-card h2 {
+  margin:
+    0;
+}
+
+
+/* =========================
+   NAVEGACIÓN
+   ========================= */
+
+nav {
+  position: fixed;
+
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  height: 70px;
+
+  background: #fff;
+
+  border-top:
+    1px solid
+    var(--line);
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(5, 1fr);
+
+  z-index: 5;
+
+  padding-bottom:
+    env(safe-area-inset-bottom);
+}
+
+
+nav button {
+  border: 0;
+
+  background: none;
+
+  color: #667085;
+
+  font-size: 20px;
+
+  cursor: pointer;
+
+  transition:
+    color .15s ease;
+}
+
+
+nav button span {
+  display: block;
+
+  font-size: 11px;
+
+  margin-top: 2px;
+}
+
+
+nav button.active {
+  color:
+    var(--accent);
+
+  font-weight:
+    750;
+}
+
+
+/* =========================
+   TOAST
+   ========================= */
+
+#toast {
+  pointer-events: none;
+}
+
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+
+@media (min-width: 650px) {
+
+  .grid {
+    grid-template-columns:
+      repeat(4, 1fr);
+  }
+
+}
+
+
+@media (max-width: 520px) {
+
+  main {
+    padding:
+      14px;
+  }
+
+
+  header {
+    padding:
+      13px 14px;
+  }
+
+
+  .brand-logo {
+    font-size: 23px;
+  }
+
+
+  .hero {
+    padding:
+      18px;
+  }
+
+
+  .hero h1 {
+    font-size: 23px;
+  }
+
+
+  .two {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .row {
+    align-items:
+      flex-start;
+  }
+
+
+  .actions .btn {
+    flex: 0 0 auto;
+  }
+
+
+  .modal-card {
+    max-height:
+      94vh;
+  }
+
+}
+
+
+@media (max-width: 380px) {
+
+  .grid {
+    gap: 8px;
+  }
+
+
+  .card {
+    padding:
+      12px;
+  }
+
+
+  .stat b {
+    font-size:
+      21px;
+  }
+
+
+  .btn {
+    padding:
+      10px 11px;
+
+    font-size:
+      13px;
+  }
+
+}
