@@ -987,12 +987,8 @@ function vehicleDetail(id) {
 
 function vehicleForm(record = null) {
 
-  const editing =
-    !!record;
-
-  const v =
-    record || {};
-
+  const editing = !!record;
+  const v = record || {};
 
   fullScreenForm(`
     <div class="form-page">
@@ -1013,9 +1009,11 @@ function vehicleForm(record = null) {
           </h1>
 
           <p class="muted">
-            ${editing
-              ? 'Modifica los datos del vehículo'
-              : 'Añade un vehículo a ENRUTA'}
+            ${
+              editing
+                ? 'Modifica los datos del vehículo'
+                : 'Añade un vehículo a ENRUTA'
+            }
           </p>
         </div>
 
@@ -1113,8 +1111,7 @@ function vehicleForm(record = null) {
 
       e.preventDefault();
 
-      const fd =
-        new FormData(e.target);
+      const fd = new FormData(e.target);
 
       const data = {
         name: fd.get('name').trim(),
@@ -1129,10 +1126,7 @@ function vehicleForm(record = null) {
 
       if (editing) {
 
-        Object.assign(
-          v,
-          data
-        );
+        Object.assign(v, data);
 
         toast('Vehículo actualizado');
 
@@ -1161,8 +1155,7 @@ function vehicleForm(record = null) {
 
 function editVehicle(id) {
 
-  const v =
-    vehicle(id);
+  const v = vehicle(id);
 
   if (!v) {
     return;
@@ -1174,8 +1167,7 @@ function editVehicle(id) {
 
 function delVehicle(id) {
 
-  const v =
-    vehicle(id);
+  const v = vehicle(id);
 
   if (!v) {
     return;
@@ -1199,8 +1191,10 @@ function delVehicle(id) {
   toast('Vehículo archivado');
 
   go('vehicles');
+}
 
-  /* =========================================================
+
+/* =========================================================
    REPOSTAJES
 ========================================================= */
 
@@ -1236,8 +1230,7 @@ function fuelPage() {
           list.length
             ? list.map(f => {
 
-                const v =
-                  vehicle(f.vehicleId);
+                const v = vehicle(f.vehicleId);
 
                 return `
                   <article class="card">
@@ -1324,8 +1317,7 @@ function fuelPage() {
 
 function fuelForm(id = null) {
 
-  const editing =
-    !!id;
+  const editing = !!id;
 
   const record =
     editing
@@ -1358,9 +1350,11 @@ function fuelForm(id = null) {
           </h1>
 
           <p class="muted">
-            ${editing
-              ? 'Modifica los datos del repostaje'
-              : 'Registra un nuevo repostaje'}
+            ${
+              editing
+                ? 'Modifica los datos del repostaje'
+                : 'Registra un nuevo repostaje'
+            }
           </p>
         </div>
 
@@ -1502,8 +1496,7 @@ function fuelForm(id = null) {
 
       e.preventDefault();
 
-      const fd =
-        new FormData(e.target);
+      const fd = new FormData(e.target);
 
       let amount =
         Number(fd.get('amount') || 0);
@@ -1532,10 +1525,7 @@ function fuelForm(id = null) {
 
       if (editing) {
 
-        Object.assign(
-          record,
-          data
-        );
+        Object.assign(record, data);
 
         toast('Repostaje actualizado');
 
@@ -1617,8 +1607,7 @@ function maintenancePage() {
           list.length
             ? list.map(m => {
 
-                const v =
-                  vehicle(m.vehicleId);
+                const v = vehicle(m.vehicleId);
 
                 return `
                   <article class="card">
@@ -1706,8 +1695,7 @@ function maintenancePage() {
 
 function maintenanceForm(id = null, vehicleId = '') {
 
-  const editing =
-    !!id;
+  const editing = !!id;
 
   const record =
     editing
@@ -1875,8 +1863,7 @@ function maintenanceForm(id = null, vehicleId = '') {
 
       e.preventDefault();
 
-      const fd =
-        new FormData(e.target);
+      const fd = new FormData(e.target);
 
       const data = {
         vehicleId: fd.get('vehicleId'),
@@ -1890,10 +1877,7 @@ function maintenanceForm(id = null, vehicleId = '') {
 
       if (editing) {
 
-        Object.assign(
-          record,
-          data
-        );
+        Object.assign(record, data);
 
         toast('Mantenimiento actualizado');
 
@@ -1991,8 +1975,7 @@ function tripsPage() {
           list.length
             ? list.map(t => {
 
-                const v =
-                  vehicle(t.vehicleId);
+                const v = vehicle(t.vehicleId);
 
                 return `
                   <article class="card">
@@ -2117,8 +2100,7 @@ function tripsPage() {
 
 function tripForm(id = null) {
 
-  const editing =
-    !!id;
+  const editing = !!id;
 
   const record =
     editing
@@ -2308,9 +2290,7 @@ function tripForm(id = null) {
 
       e.preventDefault();
 
-      const fd =
-        new FormData(e.target);
-
+      const fd = new FormData(e.target);
 
       const data = {
 
@@ -2432,25 +2412,15 @@ function deleteTrip(id) {
    FORMULARIOS A PANTALLA COMPLETA
 ========================================================= */
 
-/*
- * Los formularios de ENRUTA se muestran como una pantalla
- * completa en lugar de una ventana pequeña.
- *
- * Se mantiene la función modal() para el simulador y para
- * compatibilidad, pero los formularios usan esta función.
- */
-
 function fullScreenForm(content) {
 
   closeModal();
-
 
   const wrapper =
     document.createElement('div');
 
   wrapper.className =
     'modal full-screen-form';
-
 
   wrapper.innerHTML = `
 
@@ -2468,27 +2438,15 @@ function fullScreenForm(content) {
 
   `;
 
-
-  document.body.appendChild(
-    wrapper
-  );
-
+  document.body.appendChild(wrapper);
 
   wrapper
-    .querySelector(
-      '.modal-backdrop'
-    )
+    .querySelector('.modal-backdrop')
     .addEventListener(
       'click',
       closeModal
     );
 
-
-  /*
-   * Al abrir un formulario llevamos el scroll
-   * al principio para que en móvil siempre
-   * aparezca la cabecera.
-   */
   wrapper.scrollTop = 0;
 
   const card =
@@ -2585,23 +2543,37 @@ function more() {
 
       </div>
 
-    /* =========================================================
+    `
+  );
+}
+
+
+/* =========================================================
    EXPORTAR / IMPORTAR
 ========================================================= */
 
 function exportData() {
+
   const blob = new Blob(
     [JSON.stringify(db, null, 2)],
     { type: 'application/json' }
   );
 
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const url =
+    URL.createObjectURL(blob);
+
+  const a =
+    document.createElement('a');
+
   a.href = url;
-  a.download = `enruta-backup-${today()}.json`;
+
+  a.download =
+    `enruta-backup-${today()}.json`;
 
   document.body.appendChild(a);
+
   a.click();
+
   a.remove();
 
   URL.revokeObjectURL(url);
@@ -2609,49 +2581,79 @@ function exportData() {
   toast('Copia exportada');
 }
 
+
 document.addEventListener('change', event => {
-  if (event.target.id !== 'importFile') return;
 
-  const file = event.target.files?.[0];
-  if (!file) return;
+  if (event.target.id !== 'importFile') {
+    return;
+  }
 
-  const reader = new FileReader();
+  const file =
+    event.target.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  const reader =
+    new FileReader();
 
   reader.onload = () => {
-    try {
-      const imported = JSON.parse(reader.result);
 
-      if (!imported || typeof imported !== 'object') {
-        throw new Error('Formato incorrecto');
+    try {
+
+      const imported =
+        JSON.parse(reader.result);
+
+      if (
+        !imported ||
+        typeof imported !== 'object'
+      ) {
+        throw new Error(
+          'Formato incorrecto'
+        );
       }
 
       db = {
-        vehicles: Array.isArray(imported.vehicles)
-          ? imported.vehicles
-          : [],
 
-        fuel: Array.isArray(imported.fuel)
-          ? imported.fuel
-          : [],
+        vehicles:
+          Array.isArray(imported.vehicles)
+            ? imported.vehicles
+            : [],
 
-        trips: Array.isArray(imported.trips)
-          ? imported.trips
-          : [],
+        fuel:
+          Array.isArray(imported.fuel)
+            ? imported.fuel
+            : [],
 
-        maint: Array.isArray(imported.maint)
-          ? imported.maint
-          : []
+        trips:
+          Array.isArray(imported.trips)
+            ? imported.trips
+            : [],
+
+        maint:
+          Array.isArray(imported.maint)
+            ? imported.maint
+            : []
+
       };
 
       save();
 
-      toast('Datos importados correctamente');
+      toast(
+        'Datos importados correctamente'
+      );
 
       render('home');
 
     } catch (error) {
-      alert('No se ha podido importar la copia.');
+
+      alert(
+        'No se ha podido importar la copia.'
+      );
+
     }
+
   };
 
   reader.readAsText(file);
@@ -2663,13 +2665,16 @@ document.addEventListener('change', event => {
 ========================================================= */
 
 function simulator() {
+
   modal(`
+
     <h2>Simulador de viaje</h2>
 
     <form id="simulatorForm">
 
       <label>
         Distancia (km)
+
         <input
           type="number"
           name="km"
@@ -2679,8 +2684,10 @@ function simulator() {
         >
       </label>
 
+
       <label>
         Consumo (L/100 km)
+
         <input
           type="number"
           name="consumption"
@@ -2690,8 +2697,10 @@ function simulator() {
         >
       </label>
 
+
       <label>
         Precio combustible (€/L)
+
         <input
           type="number"
           name="price"
@@ -2701,7 +2710,9 @@ function simulator() {
         >
       </label>
 
+
       <div id="simulatorResult"></div>
+
 
       <div class="modal-actions">
 
@@ -2723,7 +2734,9 @@ function simulator() {
       </div>
 
     </form>
+
   `);
+
 
   document
     .getElementById('simulatorForm')
@@ -2731,50 +2744,70 @@ function simulator() {
 
       e.preventDefault();
 
-      const fd = new FormData(e.target);
+      const fd =
+        new FormData(e.target);
 
-      const km = Number(fd.get('km'));
-      const consumption = Number(fd.get('consumption'));
-      const price = Number(fd.get('price'));
+      const km =
+        Number(fd.get('km'));
 
-      const liters = km * consumption / 100;
-      const cost = liters * price;
+      const consumption =
+        Number(fd.get('consumption'));
 
-      document.getElementById('simulatorResult').innerHTML = `
-        <div class="result-box">
+      const price =
+        Number(fd.get('price'));
 
-          <strong>Resultado</strong>
+      const liters =
+        km * consumption / 100;
 
-          <p>
-            Combustible:
-            <strong>${liters.toFixed(1)} L</strong>
-          </p>
+      const cost =
+        liters * price;
 
-          <p>
-            Coste:
-            <strong>${eur(cost)}</strong>
-          </p>
 
-        </div>
-      `;
+      document
+        .getElementById('simulatorResult')
+        .innerHTML = `
+
+          <div class="result-box">
+
+            <strong>Resultado</strong>
+
+            <p>
+              Combustible:
+              <strong>
+                ${liters.toFixed(1)} L
+              </strong>
+            </p>
+
+            <p>
+              Coste:
+              <strong>
+                ${eur(cost)}
+              </strong>
+            </p>
+
+          </div>
+
+        `;
     });
 }
 
 
 /* =========================================================
    MODAL NORMAL
-   Se mantiene para el simulador y otras ventanas pequeñas.
 ========================================================= */
 
 function modal(content) {
 
   closeModal();
 
-  const wrapper = document.createElement('div');
+  const wrapper =
+    document.createElement('div');
 
-  wrapper.className = 'modal';
+  wrapper.className =
+    'modal';
 
   wrapper.innerHTML = `
+
     <div class="modal-backdrop"></div>
 
     <div
@@ -2794,17 +2827,24 @@ function modal(content) {
       ${content}
 
     </div>
+
   `;
 
   document.body.appendChild(wrapper);
 
   wrapper
     .querySelector('.modal-backdrop')
-    .addEventListener('click', closeModal);
+    .addEventListener(
+      'click',
+      closeModal
+    );
 
   wrapper
     .querySelector('.modal-close')
-    .addEventListener('click', closeModal);
+    .addEventListener(
+      'click',
+      closeModal
+    );
 }
 
 
@@ -2818,9 +2858,12 @@ let currentVehicleId = null;
 
 function render(page) {
 
-  const app = document.getElementById('app');
+  const app =
+    document.getElementById('app');
 
-  if (!app) return;
+  if (!app) {
+    return;
+  }
 
   currentPage = page;
 
@@ -2851,8 +2894,12 @@ function render(page) {
       break;
 
     default:
+
       app.innerHTML = home();
-      currentPage = 'home';
+
+      currentPage =
+        'home';
+
       break;
   }
 
@@ -2901,7 +2948,8 @@ document
 
     button.addEventListener('click', () => {
 
-      const page = button.dataset.page;
+      const page =
+        button.dataset.page;
 
       go(page);
 
@@ -2923,7 +2971,8 @@ window.addEventListener(
 
     event.preventDefault();
 
-    deferredPrompt = event;
+    deferredPrompt =
+      event;
 
     const install =
       document.getElementById('install');
@@ -2938,24 +2987,29 @@ window.addEventListener(
 
 document
   .getElementById('install')
-  ?.addEventListener('click', async () => {
+  ?.addEventListener(
+    'click',
+    async () => {
 
-    if (!deferredPrompt) return;
+      if (!deferredPrompt) {
+        return;
+      }
 
-    deferredPrompt.prompt();
+      deferredPrompt.prompt();
 
-    await deferredPrompt.userChoice;
+      await deferredPrompt.userChoice;
 
-    deferredPrompt = null;
+      deferredPrompt = null;
 
-    const install =
-      document.getElementById('install');
+      const install =
+        document.getElementById('install');
 
-    if (install) {
-      install.hidden = true;
+      if (install) {
+        install.hidden = true;
+      }
+
     }
-
-  });
+  );
 
 
 /* =========================================================
@@ -2964,20 +3018,23 @@ document
 
 if ('serviceWorker' in navigator) {
 
-  window.addEventListener('load', () => {
+  window.addEventListener(
+    'load',
+    () => {
 
-    navigator.serviceWorker
-      .register('./sw.js')
-      .catch(error => {
+      navigator.serviceWorker
+        .register('./sw.js')
+        .catch(error => {
 
-        console.warn(
-          'Service Worker:',
-          error
-        );
+          console.warn(
+            'Service Worker:',
+            error
+          );
 
-      });
+        });
 
-  });
+    }
+  );
 
 }
 
@@ -3009,13 +3066,16 @@ function escapeAttr(value) {
    CERRAR MODALES CON ESC
 ========================================================= */
 
-document.addEventListener('keydown', event => {
+document.addEventListener(
+  'keydown',
+  event => {
 
-  if (event.key === 'Escape') {
-    closeModal();
+    if (event.key === 'Escape') {
+      closeModal();
+    }
+
   }
-
-});
+);
 
 
 /* =========================================================
@@ -3023,8 +3083,3 @@ document.addEventListener('keydown', event => {
 ========================================================= */
 
 render('home');
-  }
-
-}
-}
-}
