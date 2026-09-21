@@ -1,6 +1,8 @@
 const K = 'enruta04';
 
-let db = JSON.parse(localStorage.getItem(K) || 'null') || {
+let db = JSON.parse(
+  localStorage.getItem(K) || 'null'
+) || {
   vehicles: [
     {
       id: 'v1',
@@ -17,40 +19,71 @@ let db = JSON.parse(localStorage.getItem(K) || 'null') || {
 let page = 'home';
 let selectedVehicle = null;
 
-const $ = selector => document.querySelector(selector);
+
+/* =========================
+   UTILIDADES
+   ========================= */
+
+const $ = selector =>
+  document.querySelector(selector);
+
 
 function save() {
-  localStorage.setItem(K, JSON.stringify(db));
+  localStorage.setItem(
+    K,
+    JSON.stringify(db)
+  );
 }
+
 
 function uid() {
-  return crypto.randomUUID?.() || Date.now() + Math.random();
+  return crypto.randomUUID?.() ||
+    Date.now() + Math.random();
 }
+
 
 function eur(value) {
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(Number(value) || 0);
+  return new Intl.NumberFormat(
+    'es-ES',
+    {
+      style: 'currency',
+      currency: 'EUR'
+    }
+  ).format(Number(value) || 0);
 }
+
 
 function vehicle(id) {
-  return db.vehicles.find(v => v.id === id);
+  return db.vehicles.find(
+    v => v.id === id
+  );
 }
+
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date()
+    .toISOString()
+    .slice(0, 10);
 }
 
-function closeModal() {
-  const modal = document.querySelector('.enruta-modal');
 
-  if (modal) modal.remove();
+function closeModal() {
+
+  const modal =
+    document.querySelector(
+      '.enruta-modal'
+    );
+
+  if (modal) {
+    modal.remove();
+  }
 
   document.body.style.overflow = '';
 }
 
+
 function toast(message) {
+
   const x = $('#toast');
 
   if (!x) return;
@@ -66,7 +99,8 @@ function toast(message) {
     'color:white;' +
     'padding:10px 14px;' +
     'border-radius:10px;' +
-    'z-index:3000;';
+    'z-index:3000;' +
+    'box-shadow:0 8px 25px #0004;';
 
   setTimeout(() => {
     x.style.cssText = '';
@@ -79,7 +113,9 @@ function toast(message) {
    ========================= */
 
 function migrateData() {
+
   if (!db || typeof db !== 'object') {
+
     db = {
       vehicles: [],
       fuel: [],
@@ -88,12 +124,25 @@ function migrateData() {
     };
   }
 
-  if (!Array.isArray(db.vehicles)) db.vehicles = [];
-  if (!Array.isArray(db.fuel)) db.fuel = [];
-  if (!Array.isArray(db.trips)) db.trips = [];
-  if (!Array.isArray(db.maint)) db.maint = [];
+  if (!Array.isArray(db.vehicles)) {
+    db.vehicles = [];
+  }
+
+  if (!Array.isArray(db.fuel)) {
+    db.fuel = [];
+  }
+
+  if (!Array.isArray(db.trips)) {
+    db.trips = [];
+  }
+
+  if (!Array.isArray(db.maint)) {
+    db.maint = [];
+  }
+
 
   if (!db.vehicles.length) {
+
     db.vehicles.push({
       id: 'v1',
       name: 'Autocaravana',
@@ -102,28 +151,44 @@ function migrateData() {
     });
   }
 
+
   db.fuel = db.fuel.map(x => {
+
     const record = { ...x };
 
     if (
-      (record.amount === undefined ||
+      (
+        record.amount === undefined ||
         record.amount === null ||
-        record.amount === '') &&
+        record.amount === ''
+      ) &&
       Number(record.liters) > 0 &&
       Number(record.price) > 0
     ) {
+
       record.amount =
-        Number(record.liters) * Number(record.price);
+        Number(record.liters) *
+        Number(record.price);
     }
 
-    if (record.km === undefined) record.km = null;
-    if (record.amount === undefined) record.amount = 0;
+
+    if (record.km === undefined) {
+      record.km = null;
+    }
+
+
+    if (record.amount === undefined) {
+      record.amount = 0;
+    }
+
 
     return record;
   });
 
+
   save();
 }
+
 
 migrateData();
 
@@ -133,6 +198,7 @@ migrateData();
    ========================= */
 
 function fuelLiters(record) {
+
   if (
     record.liters !== undefined &&
     record.liters !== null &&
@@ -141,38 +207,88 @@ function fuelLiters(record) {
     return Number(record.liters);
   }
 
+
   if (
     Number(record.amount) > 0 &&
     Number(record.price) > 0
   ) {
-    return Number(record.amount) / Number(record.price);
+
+    return (
+      Number(record.amount) /
+      Number(record.price)
+    );
   }
+
 
   return 0;
 }
 
+
+function fuelAmount(record) {
+
+  if (Number(record.amount) > 0) {
+    return Number(record.amount);
+  }
+
+
+  if (
+    Number(record.liters) > 0 &&
+    Number(record.price) > 0
+  ) {
+
+    return (
+      Number(record.liters) *
+      Number(record.price)
+    );
+  }
+
+
+  return 0;
+}
+
+
 function avg(v) {
-  const records = db.fuel
-    .filter(x =>
-      x.vehicle === v.id &&
-      x.km !== null &&
-      x.km !== undefined &&
-      x.km !== '' &&
-      fuelLiters(x) > 0
-    )
-    .sort((a, b) => Number(a.km) - Number(b.km));
+
+  const records =
+    db.fuel
+      .filter(x =>
+        x.vehicle === v.id &&
+        x.km !== null &&
+        x.km !== undefined &&
+        x.km !== '' &&
+        fuelLiters(x) > 0
+      )
+      .sort(
+        (a, b) =>
+          Number(a.km) -
+          Number(b.km)
+      );
+
 
   const values = [];
 
-  for (let i = 1; i < records.length; i++) {
-    const previous = records[i - 1];
-    const current = records[i];
+
+  for (
+    let i = 1;
+    i < records.length;
+    i++
+  ) {
+
+    const previous =
+      records[i - 1];
+
+    const current =
+      records[i];
+
 
     const distance =
-      Number(current.km) - Number(previous.km);
+      Number(current.km) -
+      Number(previous.km);
+
 
     const liters =
       fuelLiters(current);
+
 
     if (
       distance > 20 &&
@@ -181,14 +297,21 @@ function avg(v) {
       previous.full &&
       liters > 0
     ) {
+
       values.push(
-        liters / distance * 100
+        liters /
+        distance *
+        100
       );
     }
   }
 
+
   return values.length
-    ? values.reduce((a, b) => a + b, 0) / values.length
+    ? values.reduce(
+        (a, b) => a + b,
+        0
+      ) / values.length
     : Number(v.cons) || 0;
 }
 
@@ -198,21 +321,29 @@ function avg(v) {
    ========================= */
 
 function layout() {
+
   const app = $('#app');
 
   if (!app) return;
 
+
   document
-    .querySelectorAll('#nav button')
+    .querySelectorAll(
+      '#nav button'
+    )
     .forEach(button => {
+
       button.classList.toggle(
         'active',
         button.dataset.page === page
       );
     });
 
+
   try {
+
     switch (page) {
+
       case 'home':
         home(app);
         break;
@@ -241,13 +372,20 @@ function layout() {
         page = 'home';
         home(app);
     }
+
   } catch (error) {
+
     console.error(error);
 
     app.innerHTML = `
       <div class="card">
         <h2>ENRUTA</h2>
-        <p>Se ha producido un error al cargar esta sección.</p>
+
+        <p>
+          Se ha producido un error
+          al cargar esta sección.
+        </p>
+
         <button
           class="btn"
           type="button"
@@ -266,24 +404,38 @@ function layout() {
    ========================= */
 
 function home(A) {
-  const kms = db.trips.reduce(
-    (sum, trip) =>
-      sum + (Number(trip.km) || 0),
-    0
-  );
 
-  const cost = db.trips.reduce(
-    (sum, trip) =>
-      sum + (Number(trip.cost) || 0),
-    0
-  );
+  const kms =
+    db.trips.reduce(
+      (sum, trip) =>
+        sum +
+        (Number(trip.km) || 0),
+      0
+    );
+
+
+  const cost =
+    db.trips.reduce(
+      (sum, trip) =>
+        sum +
+        (Number(trip.cost) || 0),
+      0
+    );
+
 
   A.innerHTML = `
+
     <section class="hero">
-      <h1>Tu vehículo. Tus rutas. Todo ENRUTA.</h1>
+
+      <h1>
+        Tu vehículo.
+        Tus rutas.
+        Todo ENRUTA.
+      </h1>
 
       <p>
-        Controla costes sin tener que apuntarlo todo.
+        Controla costes sin tener
+        que apuntarlo todo.
       </p>
 
       <div class="actions">
@@ -305,7 +457,9 @@ function home(A) {
         </button>
 
       </div>
+
     </section>
+
 
     <div class="grid">
 
@@ -331,24 +485,38 @@ function home(A) {
 
     </div>
 
+
     <div class="card">
 
       <div class="row">
         <h2>Consumo aprendido</h2>
-        <span class="pill">automático</span>
+        <span class="pill">
+          automático
+        </span>
       </div>
 
       ${
         db.vehicles.length
-          ? db.vehicles.map(v => `
-              <div
-                class="row"
-                style="padding:8px 0;border-top:1px solid #eee"
-              >
-                <span>${v.name}</span>
-                <b>${avg(v).toFixed(1)} L/100 km</b>
-              </div>
-            `).join('')
+          ? db.vehicles
+              .map(v => `
+
+                <div
+                  class="row vehicle-summary"
+                >
+
+                  <span>
+                    ${v.name}
+                  </span>
+
+                  <b>
+                    ${avg(v).toFixed(1)}
+                    L/100 km
+                  </b>
+
+                </div>
+
+              `)
+              .join('')
           : `
             <p class="empty">
               No hay vehículos.
@@ -366,8 +534,10 @@ function home(A) {
    ========================= */
 
 function vehicles(A) {
+
   A.innerHTML = `
-    <div class="row">
+
+    <div class="row page-title">
 
       <h1>Vehículos</h1>
 
@@ -381,64 +551,91 @@ function vehicles(A) {
 
     </div>
 
+
     <div class="list">
 
       ${
-        db.vehicles.map(v => `
-          <div class="item">
+        db.vehicles.length
+          ? db.vehicles
+              .map(v => `
 
-            <div
-              class="row"
-              style="cursor:pointer"
-              data-action="vehicleDetail"
-              data-id="${v.id}"
-            >
+                <div class="item">
 
-              <div>
-                <h3>${v.name}</h3>
-                <span class="pill">${v.type}</span>
-              </div>
+                  <div
+                    class="row vehicle-click"
+                    data-action="vehicleDetail"
+                    data-id="${v.id}"
+                  >
 
-              <b>
-                ${avg(v).toFixed(1)} L/100
-              </b>
+                    <div>
 
+                      <h3>
+                        ${v.name}
+                      </h3>
+
+                      <span class="pill">
+                        ${v.type}
+                      </span>
+
+                    </div>
+
+                    <b>
+                      ${avg(v).toFixed(1)}
+                      L/100
+                    </b>
+
+                  </div>
+
+
+                  <p class="muted">
+
+                    Consumo base:
+                    ${Number(v.cons) || 0}
+                    L/100 km
+
+                  </p>
+
+
+                  <div class="actions">
+
+                    <button
+                      class="btn"
+                      type="button"
+                      data-action="vehicleDetail"
+                      data-id="${v.id}"
+                    >
+                      Ver ficha
+                    </button>
+
+                    <button
+                      class="btn secondary"
+                      type="button"
+                      data-action="editVehicle"
+                      data-id="${v.id}"
+                    >
+                      ✏️ Editar
+                    </button>
+
+                    <button
+                      class="btn danger"
+                      type="button"
+                      data-action="delVehicle"
+                      data-id="${v.id}"
+                    >
+                      Archivar
+                    </button>
+
+                  </div>
+
+                </div>
+
+              `)
+              .join('')
+          : `
+            <div class="empty">
+              No hay vehículos.
             </div>
-
-            <p class="muted">
-              Consumo base:
-              ${Number(v.cons) || 0} L/100 km
-            </p>
-
-            <div class="actions">
-
-              <button
-                class="btn"
-                type="button"
-                data-action="vehicleDetail"
-                data-id="${v.id}"
-              >
-                Ver ficha
-              </button>
-
-              <button
-                class="btn danger"
-                type="button"
-                data-action="delVehicle"
-                data-id="${v.id}"
-              >
-                Archivar
-              </button>
-
-            </div>
-
-          </div>
-        `).join('') ||
-        `
-          <div class="empty">
-            No hay vehículos.
-          </div>
-        `
+          `
       }
 
     </div>
@@ -447,85 +644,128 @@ function vehicles(A) {
 
 
 /* =========================
-   FICHA DEL VEHÍCULO
+   FICHA VEHÍCULO
    ========================= */
 
 function vehicleDetail(A) {
-  const v = vehicle(selectedVehicle);
+
+  const v =
+    vehicle(selectedVehicle);
+
 
   if (!v) {
+
     page = 'vehicles';
     vehicles(A);
     return;
   }
 
-  const fuelRecords = db.fuel
-    .filter(x => x.vehicle === v.id)
-    .sort((a, b) =>
-      String(b.date || '').localeCompare(
-        String(a.date || '')
+
+  const fuelRecords =
+    db.fuel
+      .filter(x =>
+        x.vehicle === v.id
       )
+      .sort((a, b) =>
+        String(b.date || '')
+          .localeCompare(
+            String(a.date || '')
+          )
+      );
+
+
+  const maintRecords =
+    db.maint
+      .filter(x =>
+        x.vehicle === v.id
+      )
+      .sort((a, b) =>
+        String(b.date || '')
+          .localeCompare(
+            String(a.date || '')
+          )
+      );
+
+
+  const tripRecords =
+    db.trips
+      .filter(x =>
+        x.vehicle === v.id
+      )
+      .sort((a, b) =>
+        String(b.date || '')
+          .localeCompare(
+            String(a.date || '')
+          )
+      );
+
+
+  const fuelTotal =
+    fuelRecords.reduce(
+      (sum, x) =>
+        sum + fuelAmount(x),
+      0
     );
 
-  const maintRecords = db.maint
-    .filter(x => x.vehicle === v.id)
-    .sort((a, b) =>
-      String(b.date || '').localeCompare(
-        String(a.date || '')
-      )
+
+  const maintTotal =
+    maintRecords.reduce(
+      (sum, x) =>
+        sum +
+        (Number(x.amount) || 0),
+      0
     );
 
-  const tripRecords = db.trips
-    .filter(x => x.vehicle === v.id)
-    .sort((a, b) =>
-      String(b.date || '').localeCompare(
-        String(a.date || '')
-      )
+
+  const tripTotal =
+    tripRecords.reduce(
+      (sum, x) =>
+        sum +
+        (Number(x.cost) || 0),
+      0
     );
 
-  const fuelTotal = fuelRecords.reduce(
-    (sum, x) => sum + fuelAmount(x),
-    0
-  );
-
-  const maintTotal = maintRecords.reduce(
-    (sum, x) => sum + (Number(x.amount) || 0),
-    0
-  );
-
-  const tripTotal = tripRecords.reduce(
-    (sum, x) => sum + (Number(x.cost) || 0),
-    0
-  );
 
   const totalCost =
     fuelTotal +
     maintTotal +
     tripTotal;
 
-  const totalKm = tripRecords.reduce(
-    (sum, x) =>
-      sum + (Number(x.km) || 0),
-    0
-  );
+
+  const totalKm =
+    tripRecords.reduce(
+      (sum, x) =>
+        sum +
+        (Number(x.km) || 0),
+      0
+    );
+
 
   const years = new Set();
 
-  fuelRecords.forEach(x => {
-    if (x.date) years.add(String(x.date).slice(0, 4));
+
+  [
+    ...fuelRecords,
+    ...maintRecords,
+    ...tripRecords
+  ].forEach(x => {
+
+    if (x.date) {
+      years.add(
+        String(x.date).slice(0, 4)
+      );
+    }
   });
 
-  maintRecords.forEach(x => {
-    if (x.date) years.add(String(x.date).slice(0, 4));
-  });
-
-  tripRecords.forEach(x => {
-    if (x.date) years.add(String(x.date).slice(0, 4));
-  });
 
   const yearList =
     Array.from(years)
-      .sort((a, b) => Number(b) - Number(a));
+      .sort(
+        (a, b) =>
+          Number(b) -
+          Number(a)
+      );
+
 
   A.innerHTML = `
 
@@ -539,26 +779,44 @@ function vehicleDetail(A) {
         ← Vehículos
       </button>
 
-      <button
-        class="btn"
-        type="button"
-        data-action="addMaint"
-      >
-        + Mantenimiento
-      </button>
+      <div class="actions">
+
+        <button
+          class="btn secondary"
+          type="button"
+          data-action="editVehicle"
+          data-id="${v.id}"
+        >
+          ✏️ Editar
+        </button>
+
+        <button
+          class="btn"
+          type="button"
+          data-action="addMaint"
+        >
+          + Mantenimiento
+        </button>
+
+      </div>
 
     </div>
+
 
     <div class="hero">
 
-      <h1>${v.name}</h1>
+      <h1>
+        ${v.name}
+      </h1>
 
       <p>
         ${v.type} ·
-        ${avg(v).toFixed(1)} L/100 km
+        ${avg(v).toFixed(1)}
+        L/100 km
       </p>
 
     </div>
+
 
     <div class="grid">
 
@@ -584,6 +842,7 @@ function vehicleDetail(A) {
 
     </div>
 
+
     <div class="card">
 
       <h2>📅 Costes por año</h2>
@@ -593,76 +852,124 @@ function vehicleDetail(A) {
           ? `
             <div class="list">
 
-              ${yearList.map(year => {
+              ${yearList
+                .map(year => {
 
-                const fuelYear =
-                  fuelRecords
-                    .filter(x =>
-                      String(x.date || '').startsWith(year)
-                    )
-                    .reduce(
-                      (sum, x) =>
-                        sum + fuelAmount(x),
-                      0
-                    );
+                  const fuelYear =
+                    fuelRecords
+                      .filter(x =>
+                        String(
+                          x.date || ''
+                        ).startsWith(year)
+                      )
+                      .reduce(
+                        (sum, x) =>
+                          sum +
+                          fuelAmount(x),
+                        0
+                      );
 
-                const maintYear =
-                  maintRecords
-                    .filter(x =>
-                      String(x.date || '').startsWith(year)
-                    )
-                    .reduce(
-                      (sum, x) =>
-                        sum + (Number(x.amount) || 0),
-                      0
-                    );
 
-                const tripYear =
-                  tripRecords
-                    .filter(x =>
-                      String(x.date || '').startsWith(year)
-                    )
-                    .reduce(
-                      (sum, x) =>
-                        sum + (Number(x.cost) || 0),
-                      0
-                    );
+                  const maintYear =
+                    maintRecords
+                      .filter(x =>
+                        String(
+                          x.date || ''
+                        ).startsWith(year)
+                      )
+                      .reduce(
+                        (sum, x) =>
+                          sum +
+                          (
+                            Number(
+                              x.amount
+                            ) || 0
+                          ),
+                        0
+                      );
 
-                const totalYear =
-                  fuelYear +
-                  maintYear +
-                  tripYear;
 
-                return `
-                  <div class="item">
+                  const tripYear =
+                    tripRecords
+                      .filter(x =>
+                        String(
+                          x.date || ''
+                        ).startsWith(year)
+                      )
+                      .reduce(
+                        (sum, x) =>
+                          sum +
+                          (
+                            Number(
+                              x.cost
+                            ) || 0
+                          ),
+                        0
+                      );
 
-                    <h3>${year}</h3>
 
-                    <div class="row">
-                      <span>⛽ Combustible</span>
-                      <b>${eur(fuelYear)}</b>
+                  const totalYear =
+                    fuelYear +
+                    maintYear +
+                    tripYear;
+
+
+                  return `
+
+                    <div class="item">
+
+                      <h3>${year}</h3>
+
+                      <div class="row">
+                        <span>
+                          ⛽ Combustible
+                        </span>
+
+                        <b>
+                          ${eur(fuelYear)}
+                        </b>
+                      </div>
+
+                      <div class="row">
+                        <span>
+                          🔧 Mantenimiento
+                        </span>
+
+                        <b>
+                          ${eur(maintYear)}
+                        </b>
+                      </div>
+
+                      <div class="row">
+                        <span>
+                          🧭 Viajes
+                        </span>
+
+                        <b>
+                          ${eur(tripYear)}
+                        </b>
+                      </div>
+
+                      <hr>
+
+                      <div class="row">
+
+                        <strong>
+                          Total ${year}
+                        </strong>
+
+                        <strong>
+                          ${eur(totalYear)}
+                        </strong>
+
+                      </div>
+
                     </div>
 
-                    <div class="row">
-                      <span>🔧 Mantenimiento</span>
-                      <b>${eur(maintYear)}</b>
-                    </div>
+                  `;
 
-                    <div class="row">
-                      <span>🧭 Viajes</span>
-                      <b>${eur(tripYear)}</b>
-                    </div>
-
-                    <hr>
-
-                    <div class="row">
-                      <strong>Total ${year}</strong>
-                      <strong>${eur(totalYear)}</strong>
-                    </div>
-
-                  </div>
-                `;
-              }).join('')}
+                })
+                .join('')}
 
             </div>
           `
@@ -679,6 +986,7 @@ function vehicleDetail(A) {
     <div class="card">
 
       <div class="row">
+
         <h2>🔧 Mantenimiento</h2>
 
         <button
@@ -688,71 +996,86 @@ function vehicleDetail(A) {
         >
           + Añadir
         </button>
+
       </div>
+
 
       ${
         maintRecords.length
           ? `
             <div class="list">
 
-              ${maintRecords.map(x => `
-                <div class="item">
+              ${maintRecords
+                .map(x => `
 
-                  <div class="row">
+                  <div class="item">
 
-                    <div>
-                      <h3>${x.type}</h3>
+                    <div class="row">
 
-                      <span class="muted">
-                        ${x.date || ''}
-                        ${
-                          x.km
-                            ? ` · ${x.km} km`
-                            : ''
-                        }
-                      </span>
+                      <div>
+
+                        <h3>
+                          ${x.type}
+                        </h3>
+
+                        <span class="muted">
+
+                          ${x.date || ''}
+
+                          ${
+                            x.km
+                              ? ` · ${x.km} km`
+                              : ''
+                          }
+
+                        </span>
+
+                      </div>
+
+                      <strong>
+                        ${eur(x.amount)}
+                      </strong>
+
                     </div>
 
-                    <strong>
-                      ${eur(x.amount)}
-                    </strong>
+
+                    ${
+                      x.notes
+                        ? `
+                          <p class="muted">
+                            ${x.notes}
+                          </p>
+                        `
+                        : ''
+                    }
+
+
+                    <div class="actions">
+
+                      <button
+                        class="btn secondary"
+                        type="button"
+                        data-action="editMaint"
+                        data-id="${x.id}"
+                      >
+                        ✏️ Editar
+                      </button>
+
+                      <button
+                        class="btn danger"
+                        type="button"
+                        data-action="deleteMaint"
+                        data-id="${x.id}"
+                      >
+                        🗑️ Borrar
+                      </button>
+
+                    </div>
 
                   </div>
 
-                  ${
-                    x.notes
-                      ? `
-                        <p class="muted">
-                          ${x.notes}
-                        </p>
-                      `
-                      : ''
-                  }
-
-                  <div class="actions">
-
-                    <button
-                      class="btn secondary"
-                      type="button"
-                      data-action="editMaint"
-                      data-id="${x.id}"
-                    >
-                      ✏️ Editar
-                    </button>
-
-                    <button
-                      class="btn danger"
-                      type="button"
-                      data-action="deleteMaint"
-                      data-id="${x.id}"
-                    >
-                      🗑️ Borrar
-                    </button>
-
-                  </div>
-
-                </div>
-              `).join('')}
+                `)
+                .join('')}
 
             </div>
           `
@@ -775,41 +1098,47 @@ function vehicleDetail(A) {
           ? `
             <div class="list">
 
-              ${fuelRecords.map(x => `
-                <div class="item">
+              ${fuelRecords
+                .map(x => `
 
-                  <div class="row">
+                  <div class="item">
 
-                    <span>
-                      ${x.date || ''}
-                    </span>
+                    <div class="row">
 
-                    <strong>
-                      ${eur(fuelAmount(x))}
-                    </strong>
+                      <span>
+                        ${x.date || ''}
+                      </span>
+
+                      <strong>
+                        ${eur(
+                          fuelAmount(x)
+                        )}
+                      </strong>
+
+                    </div>
+
+                    <p class="muted">
+
+                      ${
+                        x.km !== null &&
+                        x.km !== undefined &&
+                        x.km !== ''
+                          ? `${x.km} km`
+                          : 'Km pendiente'
+                      }
+
+                      ${
+                        Number(x.price) > 0
+                          ? ` · ${eur(x.price)}/L`
+                          : ''
+                      }
+
+                    </p>
 
                   </div>
 
-                  <p class="muted">
-
-                    ${
-                      x.km !== null &&
-                      x.km !== undefined &&
-                      x.km !== ''
-                        ? `${x.km} km`
-                        : 'Km pendiente'
-                    }
-
-                    ${
-                      Number(x.price) > 0
-                        ? ` · ${eur(x.price)}/L`
-                        : ''
-                    }
-
-                  </p>
-
-                </div>
-              `).join('')}
+                `)
+                .join('')}
 
             </div>
           `
@@ -832,29 +1161,40 @@ function vehicleDetail(A) {
           ? `
             <div class="list">
 
-              ${tripRecords.map(x => `
-                <div class="item">
+              ${tripRecords
+                .map(x => `
 
-                  <div class="row">
+                  <div class="item">
 
-                    <div>
-                      <h3>${x.name}</h3>
+                    <div class="row">
 
-                      <span class="muted">
-                        ${x.date || ''}
-                        ·
-                        ${Number(x.km) || 0} km
-                      </span>
+                      <div>
+
+                        <h3>
+                          ${x.name}
+                        </h3>
+
+                        <span class="muted">
+
+                          ${x.date || ''}
+                          ·
+                          ${Number(x.km) || 0}
+                          km
+
+                        </span>
+
+                      </div>
+
+                      <strong>
+                        ${eur(x.cost)}
+                      </strong>
+
                     </div>
-
-                    <strong>
-                      ${eur(x.cost)}
-                    </strong>
 
                   </div>
 
-                </div>
-              `).join('')}
+                `)
+                .join('')}
 
             </div>
           `
@@ -874,7 +1214,9 @@ function vehicleDetail(A) {
 
       <p>
         Kilómetros registrados:
-        <strong>${Math.round(totalKm)} km</strong>
+        <strong>
+          ${Math.round(totalKm)} km
+        </strong>
       </p>
 
       <p>
@@ -882,20 +1224,27 @@ function vehicleDetail(A) {
         <strong>
           ${
             totalKm > 0
-              ? eur(totalCost / totalKm)
+              ? eur(
+                  totalCost /
+                  totalKm
+                )
               : '—'
           }
-        }
+        </strong>
       </p>
 
       <p>
         Repostajes:
-        <strong>${fuelRecords.length}</strong>
+        <strong>
+          ${fuelRecords.length}
+        </strong>
       </p>
 
       <p>
         Mantenimientos:
-        <strong>${maintRecords.length}</strong>
+        <strong>
+          ${maintRecords.length}
+        </strong>
       </p>
 
     </div>
@@ -904,40 +1253,21 @@ function vehicleDetail(A) {
 
 
 /* =========================
-   IMPORTE COMBUSTIBLE
-   ========================= */
-
-function fuelAmount(record) {
-  if (Number(record.amount) > 0) {
-    return Number(record.amount);
-  }
-
-  if (
-    Number(record.liters) > 0 &&
-    Number(record.price) > 0
-  ) {
-    return (
-      Number(record.liters) *
-      Number(record.price)
-    );
-  }
-
-  return 0;
-}
-
-
-/* =========================
    REPOSTAJES
    ========================= */
 
 function fuel(A) {
-  const records = db.fuel
-    .slice()
-    .sort((a, b) =>
-      String(b.date || '').localeCompare(
-        String(a.date || '')
-      )
-    );
+
+  const records =
+    db.fuel
+      .slice()
+      .sort((a, b) =>
+        String(b.date || '')
+          .localeCompare(
+            String(a.date || '')
+          )
+      );
+
 
   A.innerHTML = `
 
@@ -955,84 +1285,103 @@ function fuel(A) {
 
     </div>
 
+
     <p class="muted">
       El importe es el dato principal.
       Los kilómetros pueden añadirse después.
     </p>
 
+
     <div class="list">
 
       ${
         records.length
-          ? records.map(x => {
+          ? records
+              .map(x => {
 
-              const kmText =
-                x.km === null ||
-                x.km === undefined ||
-                x.km === ''
-                  ? 'Km pendiente'
-                  : `${x.km} km`;
+                const kmText =
+                  x.km === null ||
+                  x.km === undefined ||
+                  x.km === ''
+                    ? 'Km pendiente'
+                    : `${x.km} km`;
 
-              return `
-                <div class="item">
 
-                  <div class="row">
+                return `
 
-                    <b>
-                      ${vehicle(x.vehicle)?.name || 'Vehículo'}
-                    </b>
+                  <div class="item">
 
-                    <span>
-                      ${x.date || ''}
-                    </span>
+                    <div class="row">
+
+                      <b>
+                        ${
+                          vehicle(
+                            x.vehicle
+                          )?.name ||
+                          'Vehículo'
+                        }
+                      </b>
+
+                      <span>
+                        ${x.date || ''}
+                      </span>
+
+                    </div>
+
+
+                    <p>
+
+                      <strong>
+                        ${eur(
+                          fuelAmount(x)
+                        )}
+                      </strong>
+
+                      ${
+                        Number(x.price) > 0
+                          ? ` · ${eur(x.price)}/L`
+                          : ''
+                      }
+
+                      · ${kmText}
+
+                      · ${
+                        x.full
+                          ? 'depósito lleno'
+                          : 'parcial'
+                      }
+
+                    </p>
+
+
+                    <div class="actions">
+
+                      <button
+                        class="btn secondary"
+                        type="button"
+                        data-action="editFuel"
+                        data-id="${x.id}"
+                      >
+                        ✏️ Editar
+                      </button>
+
+                      <button
+                        class="btn danger"
+                        type="button"
+                        data-action="deleteFuel"
+                        data-id="${x.id}"
+                      >
+                        🗑️ Borrar
+                      </button>
+
+                    </div>
 
                   </div>
 
-                  <p>
-                    <strong>
-                      ${eur(fuelAmount(x))}
-                    </strong>
+                `;
 
-                    ${
-                      Number(x.price) > 0
-                        ? ` · ${eur(x.price)}/L`
-                        : ''
-                    }
-
-                    · ${kmText}
-
-                    · ${
-                      x.full
-                        ? 'depósito lleno'
-                        : 'parcial'
-                    }
-                  </p>
-
-                  <div class="actions">
-
-                    <button
-                      class="btn secondary"
-                      type="button"
-                      data-action="editFuel"
-                      data-id="${x.id}"
-                    >
-                      ✏️ Editar
-                    </button>
-
-                    <button
-                      class="btn danger"
-                      type="button"
-                      data-action="deleteFuel"
-                      data-id="${x.id}"
-                    >
-                      🗑️ Borrar
-                    </button>
-
-                  </div>
-
-                </div>
-              `;
-            }).join('')
+              })
+              .join('')
           : `
             <div class="empty">
               No hay repostajes todavía.
@@ -1050,16 +1399,21 @@ function fuel(A) {
    ========================= */
 
 function fuelForm(record = null) {
-  const editing = !!record;
+
+  const editing =
+    !!record;
+
 
   const currentAmount =
     record?.amount ??
     (
       Number(record?.liters) > 0 &&
       Number(record?.price) > 0
-        ? Number(record.liters) * Number(record.price)
+        ? Number(record.liters) *
+          Number(record.price)
         : ''
     );
+
 
   const currentKm =
     record?.km === null ||
@@ -1067,8 +1421,10 @@ function fuelForm(record = null) {
       ? ''
       : record.km;
 
+
   const currentPrice =
     record?.price ?? '';
+
 
   modal(
     editing
@@ -1076,33 +1432,47 @@ function fuelForm(record = null) {
       : 'Nuevo repostaje',
 
     `
+
       <form
         class="form"
         id="fuelForm"
       >
 
         <label>
+
           Vehículo
 
-          <select id="fuelVehicle" required>
+          <select
+            id="fuelVehicle"
+            required
+          >
+
             ${
-              db.vehicles.map(v => `
-                <option
-                  value="${v.id}"
-                  ${
-                    record?.vehicle === v.id
-                      ? 'selected'
-                      : ''
-                  }
-                >
-                  ${v.name}
-                </option>
-              `).join('')
+              db.vehicles
+                .map(v => `
+
+                  <option
+                    value="${v.id}"
+                    ${
+                      record?.vehicle === v.id
+                        ? 'selected'
+                        : ''
+                    }
+                  >
+                    ${v.name}
+                  </option>
+
+                `)
+                .join('')
             }
+
           </select>
+
         </label>
 
+
         <label>
+
           Importe repostado (€)
 
           <input
@@ -1115,9 +1485,12 @@ function fuelForm(record = null) {
             inputmode="decimal"
             placeholder="Ej. 85,50"
           >
+
         </label>
 
+
         <label>
+
           Precio por litro (€/L)
 
           <input
@@ -1129,11 +1502,16 @@ function fuelForm(record = null) {
             inputmode="decimal"
             placeholder="Ej. 1,559"
           >
+
         </label>
 
+
         <label>
+
           Km odómetro
-          <span class="muted">(opcional)</span>
+          <span class="muted">
+            (opcional)
+          </span>
 
           <input
             id="fuelKm"
@@ -1144,9 +1522,12 @@ function fuelForm(record = null) {
             inputmode="numeric"
             placeholder="Puedes añadirlo después"
           >
+
         </label>
 
+
         <label>
+
           Fecha
 
           <input
@@ -1155,20 +1536,30 @@ function fuelForm(record = null) {
             value="${record?.date || today()}"
             required
           >
+
         </label>
 
-        <label>
+
+        <label class="check-label">
+
           <input
             id="fuelFull"
             type="checkbox"
             ${
               record
-                ? (record.full ? 'checked' : '')
+                ? (
+                    record.full
+                      ? 'checked'
+                      : ''
+                  )
                 : 'checked'
             }
           >
+
           Depósito lleno
+
         </label>
+
 
         <div class="actions">
 
@@ -1176,7 +1567,11 @@ function fuelForm(record = null) {
             class="btn"
             type="submit"
           >
-            ${editing ? 'Guardar cambios' : 'Guardar repostaje'}
+            ${
+              editing
+                ? 'Guardar cambios'
+                : 'Guardar repostaje'
+            }
           </button>
 
           <button
@@ -1190,82 +1585,138 @@ function fuelForm(record = null) {
         </div>
 
       </form>
+
     `
   );
 
-  const form = $('#fuelForm');
+
+  const form =
+    $('#fuelForm');
+
 
   if (!form) return;
 
-  form.addEventListener('submit', event => {
-    event.preventDefault();
 
-    const amount =
-      Number($('#fuelAmount').value);
+  form.addEventListener(
+    'submit',
+    event => {
 
-    const price =
-      Number($('#fuelPrice').value);
+      event.preventDefault();
 
-    const kmValue =
-      $('#fuelKm').value.trim();
 
-    const km =
-      kmValue === ''
-        ? null
-        : Number(kmValue);
-
-    if (!amount || amount <= 0) {
-      toast('Introduce un importe válido');
-      return;
-    }
-
-    if (
-      km !== null &&
-      (!Number.isFinite(km) || km < 0)
-    ) {
-      toast('Los kilómetros no son válidos');
-      return;
-    }
-
-    const data = {
-      vehicle: $('#fuelVehicle').value,
-      amount,
-      price: price > 0 ? price : 0,
-      km,
-      full: $('#fuelFull').checked,
-      date: $('#fuelDate').value,
-      updatedAt: Date.now()
-    };
-
-    if (editing) {
-      const index =
-        db.fuel.findIndex(
-          x => x.id === record.id
+      const amount =
+        Number(
+          $('#fuelAmount').value
         );
 
-      if (index >= 0) {
-        db.fuel[index] = {
-          ...db.fuel[index],
-          ...data
-        };
+
+      const price =
+        Number(
+          $('#fuelPrice').value
+        );
+
+
+      const kmValue =
+        $('#fuelKm')
+          .value
+          .trim();
+
+
+      const km =
+        kmValue === ''
+          ? null
+          : Number(kmValue);
+
+
+      if (!amount || amount <= 0) {
+
+        toast(
+          'Introduce un importe válido'
+        );
+
+        return;
       }
-    } else {
-      db.fuel.push({
-        id: uid(),
-        ...data
-      });
+
+
+      if (
+        km !== null &&
+        (
+          !Number.isFinite(km) ||
+          km < 0
+        )
+      ) {
+
+        toast(
+          'Los kilómetros no son válidos'
+        );
+
+        return;
+      }
+
+
+      const data = {
+
+        vehicle:
+          $('#fuelVehicle').value,
+
+        amount,
+
+        price:
+          price > 0
+            ? price
+            : 0,
+
+        km,
+
+        full:
+          $('#fuelFull').checked,
+
+        date:
+          $('#fuelDate').value,
+
+        updatedAt:
+          Date.now()
+      };
+
+
+      if (editing) {
+
+        const index =
+          db.fuel.findIndex(
+            x =>
+              x.id === record.id
+          );
+
+
+        if (index >= 0) {
+
+          db.fuel[index] = {
+            ...db.fuel[index],
+            ...data
+          };
+        }
+
+      } else {
+
+        db.fuel.push({
+          id: uid(),
+          ...data
+        });
+      }
+
+
+      save();
+      closeModal();
+      layout();
+
+
+      toast(
+        editing
+          ? 'Repostaje actualizado'
+          : 'Repostaje guardado'
+      );
     }
-
-    save();
-    closeModal();
-    layout();
-
-    toast(
-      editing
-        ? 'Repostaje actualizado'
-        : 'Repostaje guardado'
-    );
-  });
+  );
 }
 
 
@@ -1274,24 +1725,38 @@ function fuelForm(record = null) {
    ========================= */
 
 function deleteFuel(id) {
+
   const record =
-    db.fuel.find(x => x.id === id);
+    db.fuel.find(
+      x => x.id === id
+    );
+
 
   if (!record) return;
 
-  const ok = confirm(
-    '¿Quieres borrar este repostaje?'
-  );
+
+  const ok =
+    confirm(
+      '¿Quieres borrar este repostaje?'
+    );
+
 
   if (!ok) return;
 
+
   db.fuel =
-    db.fuel.filter(x => x.id !== id);
+    db.fuel.filter(
+      x => x.id !== id
+    );
+
 
   save();
   layout();
 
-  toast('Repostaje borrado');
+
+  toast(
+    'Repostaje borrado'
+  );
 }
 
 
@@ -1300,12 +1765,16 @@ function deleteFuel(id) {
    ========================= */
 
 function maintForm(record = null) {
-  const editing = !!record;
+
+  const editing =
+    !!record;
+
 
   const defaultVehicle =
     record?.vehicle ||
     selectedVehicle ||
     db.vehicles[0]?.id;
+
 
   modal(
     editing
@@ -1313,36 +1782,47 @@ function maintForm(record = null) {
       : 'Nuevo mantenimiento',
 
     `
+
       <form
         class="form"
         id="maintForm"
       >
 
         <label>
+
           Vehículo
 
           <select
             id="maintVehicle"
             required
           >
+
             ${
-              db.vehicles.map(v => `
-                <option
-                  value="${v.id}"
-                  ${
-                    defaultVehicle === v.id
-                      ? 'selected'
-                      : ''
-                  }
-                >
-                  ${v.name}
-                </option>
-              `).join('')
+              db.vehicles
+                .map(v => `
+
+                  <option
+                    value="${v.id}"
+                    ${
+                      defaultVehicle === v.id
+                        ? 'selected'
+                        : ''
+                    }
+                  >
+                    ${v.name}
+                  </option>
+
+                `)
+                .join('')
             }
+
           </select>
+
         </label>
 
+
         <label>
+
           Tipo de mantenimiento
 
           <input
@@ -1351,9 +1831,12 @@ function maintForm(record = null) {
             value="${record?.type || ''}"
             placeholder="Aceite, neumáticos, frenos..."
           >
+
         </label>
 
+
         <label>
+
           Km
 
           <input
@@ -1363,9 +1846,12 @@ function maintForm(record = null) {
             value="${record?.km || ''}"
             placeholder="Opcional"
           >
+
         </label>
 
+
         <label>
+
           Importe €
 
           <input
@@ -1376,9 +1862,12 @@ function maintForm(record = null) {
             value="${record?.amount ?? ''}"
             required
           >
+
         </label>
 
+
         <label>
+
           Fecha
 
           <input
@@ -1387,16 +1876,21 @@ function maintForm(record = null) {
             value="${record?.date || today()}"
             required
           >
+
         </label>
 
+
         <label>
+
           Notas
 
           <textarea
             id="maintNotes"
             placeholder="Observaciones..."
           >${record?.notes || ''}</textarea>
+
         </label>
+
 
         <div class="actions">
 
@@ -1404,7 +1898,11 @@ function maintForm(record = null) {
             class="btn"
             type="submit"
           >
-            ${editing ? 'Guardar cambios' : 'Guardar mantenimiento'}
+            ${
+              editing
+                ? 'Guardar cambios'
+                : 'Guardar mantenimiento'
+            }
           </button>
 
           <button
@@ -1418,61 +1916,103 @@ function maintForm(record = null) {
         </div>
 
       </form>
+
     `
   );
+
 
   $('#maintForm')?.addEventListener(
     'submit',
     event => {
+
       event.preventDefault();
 
+
       const data = {
-        vehicle: $('#maintVehicle').value,
-        type: $('#maintType').value.trim(),
+
+        vehicle:
+          $('#maintVehicle').value,
+
+        type:
+          $('#maintType')
+            .value
+            .trim(),
+
         km:
-          Number($('#maintKm').value) || null,
+          Number(
+            $('#maintKm').value
+          ) || null,
+
         amount:
-          Number($('#maintAmount').value) || 0,
+          Number(
+            $('#maintAmount').value
+          ) || 0,
+
         notes:
-          $('#maintNotes').value.trim(),
+          $('#maintNotes')
+            .value
+            .trim(),
+
         date:
           $('#maintDate').value,
-        updatedAt: Date.now()
+
+        updatedAt:
+          Date.now()
       };
 
+
       if (!data.type) {
-        toast('Introduce el tipo de mantenimiento');
+
+        toast(
+          'Introduce el tipo de mantenimiento'
+        );
+
         return;
       }
 
+
       if (editing) {
+
         const index =
           db.maint.findIndex(
-            x => x.id === record.id
+            x =>
+              x.id === record.id
           );
 
+
         if (index >= 0) {
+
           db.maint[index] = {
             ...db.maint[index],
             ...data
           };
         }
+
       } else {
+
         db.maint.push({
           id: uid(),
           ...data
         });
       }
 
+
       save();
       closeModal();
 
+
       if (data.vehicle) {
-        selectedVehicle = data.vehicle;
-        page = 'vehicleDetail';
+
+        selectedVehicle =
+          data.vehicle;
+
+        page =
+          'vehicleDetail';
       }
 
+
       layout();
+
 
       toast(
         editing
@@ -1483,25 +2023,357 @@ function maintForm(record = null) {
   );
 }
 
+
 function deleteMaint(id) {
+
   const record =
-    db.maint.find(x => x.id === id);
+    db.maint.find(
+      x => x.id === id
+    );
+
 
   if (!record) return;
 
-  const ok = confirm(
-    `¿Quieres borrar el mantenimiento "${record.type}"?`
-  );
+
+  const ok =
+    confirm(
+      `¿Quieres borrar el mantenimiento "${record.type}"?`
+    );
+
 
   if (!ok) return;
 
+
   db.maint =
-    db.maint.filter(x => x.id !== id);
+    db.maint.filter(
+      x => x.id !== id
+    );
+
 
   save();
   layout();
 
-  toast('Mantenimiento borrado');
+
+  toast(
+    'Mantenimiento borrado'
+  );
+}
+
+
+/* =========================
+   FORMULARIO VEHÍCULO
+   ========================= */
+
+function vehicleForm(record = null) {
+
+  const editing =
+    !!record;
+
+
+  modal(
+    editing
+      ? 'Editar vehículo'
+      : 'Nuevo vehículo',
+
+    `
+
+      <form
+        class="form"
+        id="vehicleForm"
+      >
+
+        <label>
+
+          Nombre
+
+          <input
+            id="vehicleName"
+            required
+            value="${record?.name || ''}"
+            placeholder="Mi coche"
+          >
+
+        </label>
+
+
+        <label>
+
+          Combustible
+
+          <select
+            id="vehicleType"
+          >
+
+            <option
+              value="diesel"
+              ${
+                record?.type === 'diesel'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Diésel
+            </option>
+
+            <option
+              value="gasolina"
+              ${
+                record?.type === 'gasolina'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Gasolina
+            </option>
+
+            <option
+              value="electrico"
+              ${
+                record?.type === 'electrico'
+                  ? 'selected'
+                  : ''
+              }
+            >
+              Eléctrico
+            </option>
+
+          </select>
+
+        </label>
+
+
+        <label>
+
+          Consumo base
+
+          <span class="muted">
+            L/100 km
+          </span>
+
+          <input
+            id="vehicleCons"
+            type="number"
+            min="0"
+            step="0.1"
+            value="${record?.cons ?? ''}"
+            placeholder="7.5"
+          >
+
+        </label>
+
+
+        <div class="actions">
+
+          <button
+            class="btn"
+            type="submit"
+          >
+            ${
+              editing
+                ? 'Guardar cambios'
+                : 'Guardar vehículo'
+            }
+          </button>
+
+          <button
+            class="btn secondary"
+            type="button"
+            data-action="closeModal"
+          >
+            Cancelar
+          </button>
+
+        </div>
+
+      </form>
+
+    `
+  );
+
+
+  $('#vehicleForm')?.addEventListener(
+    'submit',
+    event => {
+
+      event.preventDefault();
+
+
+      const name =
+        $('#vehicleName')
+          .value
+          .trim();
+
+
+      const type =
+        $('#vehicleType')
+          .value;
+
+
+      const cons =
+        Number(
+          $('#vehicleCons').value
+        ) || 0;
+
+
+      if (!name) {
+
+        toast(
+          'Introduce un nombre'
+        );
+
+        return;
+      }
+
+
+      if (editing) {
+
+        const index =
+          db.vehicles.findIndex(
+            x =>
+              x.id === record.id
+          );
+
+
+        if (index >= 0) {
+
+          db.vehicles[index] = {
+
+            ...db.vehicles[index],
+
+            name,
+            type,
+            cons,
+
+            updatedAt:
+              Date.now()
+          };
+        }
+
+
+        selectedVehicle =
+          record.id;
+
+        page =
+          'vehicleDetail';
+
+
+        save();
+        closeModal();
+        layout();
+
+
+        toast(
+          'Vehículo actualizado'
+        );
+
+
+      } else {
+
+        const newVehicle = {
+
+          id: uid(),
+
+          name,
+
+          type,
+
+          cons,
+
+          updatedAt:
+            Date.now()
+        };
+
+
+        db.vehicles.push(
+          newVehicle
+        );
+
+
+        save();
+        closeModal();
+
+
+        selectedVehicle =
+          newVehicle.id;
+
+        page =
+          'vehicleDetail';
+
+
+        layout();
+
+
+        toast(
+          'Vehículo añadido'
+        );
+      }
+    }
+  );
+}
+
+
+function addVehicle() {
+  vehicleForm();
+}
+
+
+function editVehicle(id) {
+
+  const v =
+    vehicle(id);
+
+
+  if (!v) return;
+
+
+  vehicleForm(v);
+}
+
+
+/* =========================
+   ARCHIVAR VEHÍCULO
+   ========================= */
+
+function delVehicle(id) {
+
+  const v =
+    vehicle(id);
+
+
+  if (!v) return;
+
+
+  const ok =
+    confirm(
+      `¿Archivar el vehículo "${v.name}"?`
+    );
+
+
+  if (!ok) return;
+
+
+  db.vehicles =
+    db.vehicles.filter(
+      x => x.id !== id
+    );
+
+
+  save();
+
+
+  selectedVehicle =
+    null;
+
+  page =
+    'vehicles';
+
+
+  layout();
+
+
+  toast(
+    'Vehículo archivado'
+  );
 }
 
 
@@ -1510,13 +2382,17 @@ function deleteMaint(id) {
    ========================= */
 
 function trips(A) {
-  const records = db.trips
-    .slice()
-    .sort((a, b) =>
-      String(b.date || '').localeCompare(
-        String(a.date || '')
-      )
-    );
+
+  const records =
+    db.trips
+      .slice()
+      .sort((a, b) =>
+        String(b.date || '')
+          .localeCompare(
+            String(a.date || '')
+          )
+      );
+
 
   A.innerHTML = `
 
@@ -1546,39 +2422,58 @@ function trips(A) {
 
     </div>
 
+
     <div class="list">
 
       ${
         records.length
-          ? records.map(t => `
-              <div class="item">
+          ? records
+              .map(t => `
 
-                <h3>${t.name}</h3>
+                <div class="item">
 
-                <p class="muted">
-                  ${t.date || ''}
-                  ·
-                  ${vehicle(t.vehicle)?.name || ''}
-                </p>
+                  <h3>
+                    ${t.name}
+                  </h3>
 
-                <div class="row">
+                  <p class="muted">
 
-                  <span>
-                    ${Number(t.km) || 0} km
-                  </span>
+                    ${t.date || ''}
+                    ·
+                    ${
+                      vehicle(t.vehicle)?.name ||
+                      ''
+                    }
 
-                  <b>
-                    ${eur(t.cost)}
-                  </b>
+                  </p>
+
+                  <div class="row">
+
+                    <span>
+                      ${Number(t.km) || 0}
+                      km
+                    </span>
+
+                    <b>
+                      ${eur(t.cost)}
+                    </b>
+
+                  </div>
 
                 </div>
 
-              </div>
-            `).join('')
+              `)
+              .join('')
           : `
             <div class="empty">
+
               No hay viajes reales.
-              Las simulaciones nunca aparecen aquí.
+
+              <br>
+
+              Las simulaciones nunca
+              aparecen aquí.
+
             </div>
           `
       }
@@ -1593,16 +2488,19 @@ function trips(A) {
    ========================= */
 
 function more(A) {
+
   A.innerHTML = `
 
     <h1>Más</h1>
+
 
     <div class="card">
 
       <h2>🧮 Simulador</h2>
 
       <p>
-        Calcula un viaje sin contaminar tus estadísticas.
+        Calcula un viaje sin contaminar
+        tus estadísticas.
       </p>
 
       <button
@@ -1615,32 +2513,37 @@ function more(A) {
 
     </div>
 
+
     <div class="card">
 
       <h2>🔧 Mantenimiento</h2>
 
       <p>
-        Los mantenimientos se consultan ahora
+        Los mantenimientos se consultan
         desde la ficha de cada vehículo.
       </p>
 
       ${
         db.vehicles.length
-          ? db.vehicles.map(v => `
-              <button
-                class="btn secondary"
-                type="button"
-                style="margin:4px"
-                data-action="vehicleDetail"
-                data-id="${v.id}"
-              >
-                ${v.name}
-              </button>
-            `).join('')
+          ? db.vehicles
+              .map(v => `
+
+                <button
+                  class="btn secondary more-vehicle"
+                  type="button"
+                  data-action="vehicleDetail"
+                  data-id="${v.id}"
+                >
+                  ${v.name}
+                </button>
+
+              `)
+              .join('')
           : ''
       }
 
     </div>
+
 
     <div class="card">
 
@@ -1663,7 +2566,8 @@ function more(A) {
       </button>
 
       <p class="muted">
-        Puedes guardar una copia de seguridad de ENRUTA.
+        Puedes guardar una copia de seguridad
+        de ENRUTA.
       </p>
 
     </div>
@@ -1676,36 +2580,27 @@ function more(A) {
    ========================= */
 
 function modal(title, html) {
+
   closeModal();
+
 
   const d =
     document.createElement('div');
 
-  d.className = 'enruta-modal';
 
-  d.style.cssText =
-    'position:fixed;' +
-    'inset:0;' +
-    'background:#0008;' +
-    'z-index:2500;' +
-    'padding:20px;' +
-    'display:grid;' +
-    'place-items:center;';
+  d.className =
+    'enruta-modal';
+
 
   d.innerHTML = `
 
-    <div
-      class="card"
-      style="
-        width:min(600px,100%);
-        max-height:90vh;
-        overflow:auto;
-      "
-    >
+    <div class="modal-card">
 
       <div class="row">
 
-        <h2>${title}</h2>
+        <h2>
+          ${title}
+        </h2>
 
         <button
           class="btn secondary"
@@ -1720,134 +2615,14 @@ function modal(title, html) {
       ${html}
 
     </div>
+
   `;
+
 
   document.body.appendChild(d);
 
-  document.body.style.overflow = 'hidden';
-}
-
-
-/* =========================
-   VEHÍCULO NUEVO
-   ========================= */
-
-function addVehicle() {
-  modal(
-    'Nuevo vehículo',
-
-    `
-      <form
-        class="form"
-        id="vehicleForm"
-      >
-
-        <label>
-          Nombre
-
-          <input
-            id="vehicleName"
-            required
-            placeholder="Mi coche"
-          >
-        </label>
-
-        <label>
-          Combustible
-
-          <select id="vehicleType">
-            <option value="diesel">
-              Diésel
-            </option>
-
-            <option value="gasolina">
-              Gasolina
-            </option>
-
-            <option value="electrico">
-              Eléctrico
-            </option>
-          </select>
-        </label>
-
-        <label>
-          Consumo base
-
-          <input
-            id="vehicleCons"
-            type="number"
-            min="0"
-            step="0.1"
-            placeholder="7.5"
-          >
-        </label>
-
-        <button
-          class="btn"
-          type="submit"
-        >
-          Guardar
-        </button>
-
-      </form>
-    `
-  );
-
-  $('#vehicleForm')?.addEventListener(
-    'submit',
-    event => {
-      event.preventDefault();
-
-      const newVehicle = {
-        id: uid(),
-        name:
-          $('#vehicleName').value.trim(),
-        type:
-          $('#vehicleType').value,
-        cons:
-          Number($('#vehicleCons').value) || 0,
-        updatedAt: Date.now()
-      };
-
-      db.vehicles.push(newVehicle);
-
-      save();
-      closeModal();
-
-      selectedVehicle =
-        newVehicle.id;
-
-      page = 'vehicleDetail';
-
-      layout();
-
-      toast('Vehículo añadido');
-    }
-  );
-}
-
-function delVehicle(id) {
-  const v = vehicle(id);
-
-  if (!v) return;
-
-  const ok = confirm(
-    `¿Archivar el vehículo "${v.name}"?`
-  );
-
-  if (!ok) return;
-
-  db.vehicles =
-    db.vehicles.filter(x => x.id !== id);
-
-  save();
-
-  selectedVehicle = null;
-  page = 'vehicles';
-
-  layout();
-
-  toast('Vehículo archivado');
+  document.body.style.overflow =
+    'hidden';
 }
 
 
@@ -1856,16 +2631,19 @@ function delVehicle(id) {
    ========================= */
 
 function addTrip() {
+
   modal(
     'Nuevo viaje real',
 
     `
+
       <form
         class="form"
         id="tripForm"
       >
 
         <label>
+
           Nombre
 
           <input
@@ -1873,11 +2651,14 @@ function addTrip() {
             required
             placeholder="Escapada a Gredos"
           >
+
         </label>
+
 
         <div class="two">
 
           <label>
+
             Fecha
 
             <input
@@ -1886,19 +2667,30 @@ function addTrip() {
               value="${today()}"
               required
             >
+
           </label>
 
+
           <label>
+
             Vehículo
 
-            <select id="tripVehicle">
+            <select
+              id="tripVehicle"
+            >
 
               ${
-                db.vehicles.map(v => `
-                  <option value="${v.id}">
-                    ${v.name}
-                  </option>
-                `).join('')
+                db.vehicles
+                  .map(v => `
+
+                    <option
+                      value="${v.id}"
+                    >
+                      ${v.name}
+                    </option>
+
+                  `)
+                  .join('')
               }
 
             </select>
@@ -1907,9 +2699,11 @@ function addTrip() {
 
         </div>
 
+
         <div class="two">
 
           <label>
+
             Km
 
             <input
@@ -1918,9 +2712,12 @@ function addTrip() {
               min="0"
               required
             >
+
           </label>
 
+
           <label>
+
             €/L
 
             <input
@@ -1930,13 +2727,16 @@ function addTrip() {
               step="0.001"
               value="1.55"
             >
+
           </label>
 
         </div>
 
+
         <div class="two">
 
           <label>
+
             Peajes €
 
             <input
@@ -1944,9 +2744,12 @@ function addTrip() {
               type="number"
               value="0"
             >
+
           </label>
 
+
           <label>
+
             Aparcamiento €
 
             <input
@@ -1954,11 +2757,14 @@ function addTrip() {
               type="number"
               value="0"
             >
+
           </label>
 
         </div>
 
+
         <label>
+
           Otros €
 
           <input
@@ -1966,7 +2772,9 @@ function addTrip() {
             type="number"
             value="0"
           >
+
         </label>
+
 
         <button
           class="btn"
@@ -1976,25 +2784,39 @@ function addTrip() {
         </button>
 
       </form>
+
     `
   );
+
 
   $('#tripForm')?.addEventListener(
     'submit',
     event => {
+
       event.preventDefault();
 
+
       const km =
-        Number($('#tripKm').value);
+        Number(
+          $('#tripKm').value
+        );
+
 
       const v =
-        vehicle($('#tripVehicle').value);
+        vehicle(
+          $('#tripVehicle').value
+        );
+
 
       const consumption =
         avg(v);
 
+
       const price =
-        Number($('#tripPrice').value) || 0;
+        Number(
+          $('#tripPrice').value
+        ) || 0;
+
 
       const fuelCost =
         km *
@@ -2002,31 +2824,58 @@ function addTrip() {
         100 *
         price;
 
+
       const cost =
         fuelCost +
-        (Number($('#tripTolls').value) || 0) +
-        (Number($('#tripParking').value) || 0) +
-        (Number($('#tripOther').value) || 0);
+        (
+          Number(
+            $('#tripTolls').value
+          ) || 0
+        ) +
+        (
+          Number(
+            $('#tripParking').value
+          ) || 0
+        ) +
+        (
+          Number(
+            $('#tripOther').value
+          ) || 0
+        );
+
 
       db.trips.push({
+
         id: uid(),
+
         name:
-          $('#tripName').value.trim(),
+          $('#tripName')
+            .value
+            .trim(),
+
         date:
           $('#tripDate').value,
+
         vehicle:
           $('#tripVehicle').value,
+
         km,
+
         cost,
-        updatedAt: Date.now()
+
+        updatedAt:
+          Date.now()
       });
+
 
       save();
       closeModal();
-
       layout();
 
-      toast('Viaje guardado');
+
+      toast(
+        'Viaje guardado'
+      );
     }
   );
 }
@@ -2037,34 +2886,48 @@ function addTrip() {
    ========================= */
 
 function sim() {
+
   modal(
     'Simulador — no guarda estadísticas',
 
     `
+
       <form
         class="form"
         id="simForm"
       >
 
         <label>
+
           Vehículo
 
-          <select id="simVehicle">
+          <select
+            id="simVehicle"
+          >
 
             ${
-              db.vehicles.map(v => `
-                <option value="${v.id}">
-                  ${v.name}
-                </option>
-              `).join('')
+              db.vehicles
+                .map(v => `
+
+                  <option
+                    value="${v.id}"
+                  >
+                    ${v.name}
+                  </option>
+
+                `)
+                .join('')
             }
 
           </select>
+
         </label>
+
 
         <div class="two">
 
           <label>
+
             Km
 
             <input
@@ -2073,9 +2936,12 @@ function sim() {
               min="0"
               required
             >
+
           </label>
 
+
           <label>
+
             €/L
 
             <input
@@ -2085,11 +2951,14 @@ function sim() {
               step="0.001"
               value="1.55"
             >
+
           </label>
 
         </div>
 
+
         <label>
+
           Consumo estimado
 
           <input
@@ -2099,11 +2968,14 @@ function sim() {
             step="0.1"
             placeholder="Usar consumo aprendido"
           >
+
         </label>
+
 
         <div class="two">
 
           <label>
+
             Peajes €
 
             <input
@@ -2111,9 +2983,12 @@ function sim() {
               type="number"
               value="0"
             >
+
           </label>
 
+
           <label>
+
             Aparcamiento €
 
             <input
@@ -2121,11 +2996,14 @@ function sim() {
               type="number"
               value="0"
             >
+
           </label>
 
         </div>
 
+
         <label>
+
           Otros €
 
           <input
@@ -2133,7 +3011,9 @@ function sim() {
             type="number"
             value="0"
           >
+
         </label>
+
 
         <button
           class="btn"
@@ -2142,33 +3022,51 @@ function sim() {
           Calcular
         </button>
 
+
         <div id="simResult"></div>
 
       </form>
+
     `
   );
+
 
   $('#simForm')?.addEventListener(
     'submit',
     event => {
+
       event.preventDefault();
 
+
       const v =
-        vehicle($('#simVehicle').value);
+        vehicle(
+          $('#simVehicle').value
+        );
+
 
       const km =
-        Number($('#simKm').value);
+        Number(
+          $('#simKm').value
+        );
+
 
       const consumptionInput =
-        Number($('#simConsumption').value);
+        Number(
+          $('#simConsumption').value
+        );
+
 
       const consumption =
         consumptionInput > 0
           ? consumptionInput
           : avg(v);
 
+
       const price =
-        Number($('#simPrice').value) || 0;
+        Number(
+          $('#simPrice').value
+        ) || 0;
+
 
       const fuelCost =
         km *
@@ -2176,29 +3074,49 @@ function sim() {
         100 *
         price;
 
+
       const total =
         fuelCost +
-        (Number($('#simTolls').value) || 0) +
-        (Number($('#simParking').value) || 0) +
-        (Number($('#simOther').value) || 0);
+        (
+          Number(
+            $('#simTolls').value
+          ) || 0
+        ) +
+        (
+          Number(
+            $('#simParking').value
+          ) || 0
+        ) +
+        (
+          Number(
+            $('#simOther').value
+          ) || 0
+        );
+
 
       $('#simResult').innerHTML = `
 
         <div class="card">
 
-          <h2>${eur(total)}</h2>
+          <h2>
+            ${eur(total)}
+          </h2>
 
           <p>
             ${km} km ·
-            ${consumption.toFixed(1)} L/100 km
+            ${consumption.toFixed(1)}
+            L/100 km
           </p>
 
           <p>
             Combustible:
-            <strong>${eur(fuelCost)}</strong>
+            <strong>
+              ${eur(fuelCost)}
+            </strong>
           </p>
 
         </div>
+
       `;
     }
   );
@@ -2210,11 +3128,15 @@ function sim() {
    ========================= */
 
 function exportData() {
+
   const data = {
+
     ...db,
+
     exportedAt:
       new Date().toISOString()
   };
+
 
   const blob =
     new Blob(
@@ -2226,27 +3148,40 @@ function exportData() {
         )
       ],
       {
-        type: 'application/json'
+        type:
+          'application/json'
       }
     );
+
 
   const url =
     URL.createObjectURL(blob);
 
+
   const a =
     document.createElement('a');
 
-  a.href = url;
+
+  a.href =
+    url;
+
   a.download =
     'enruta-backup.json';
 
+
   document.body.appendChild(a);
+
   a.click();
+
   a.remove();
+
 
   URL.revokeObjectURL(url);
 
-  toast('Copia exportada');
+
+  toast(
+    'Copia exportada'
+  );
 }
 
 
@@ -2255,12 +3190,17 @@ function exportData() {
    ========================= */
 
 function importData() {
+
   const input =
     document.createElement('input');
 
-  input.type = 'file';
+
+  input.type =
+    'file';
+
   input.accept =
     '.json,application/json';
+
 
   input.addEventListener(
     'change',
@@ -2269,39 +3209,63 @@ function importData() {
       const file =
         input.files?.[0];
 
+
       if (!file) return;
+
 
       const reader =
         new FileReader();
+
 
       reader.onload = () => {
 
         try {
 
           const imported =
-            JSON.parse(reader.result);
+            JSON.parse(
+              reader.result
+            );
+
 
           if (
             !imported ||
-            !Array.isArray(imported.vehicles)
+            !Array.isArray(
+              imported.vehicles
+            )
           ) {
-            throw new Error('invalid');
+
+            throw new Error(
+              'invalid'
+            );
           }
 
-          db = imported;
+
+          db =
+            imported;
+
 
           migrateData();
 
-          selectedVehicle = null;
-          page = 'home';
+
+          selectedVehicle =
+            null;
+
+          page =
+            'home';
+
 
           layout();
 
-          toast('Copia importada');
+
+          toast(
+            'Copia importada'
+          );
 
         } catch (error) {
 
-          console.error(error);
+          console.error(
+            error
+          );
 
           toast(
             'El archivo no es válido'
@@ -2309,9 +3273,11 @@ function importData() {
         }
       };
 
+
       reader.readAsText(file);
     }
   );
+
 
   input.click();
 }
@@ -2330,123 +3296,202 @@ document.addEventListener(
         '#nav button[data-page]'
       );
 
+
     if (navButton) {
 
       page =
         navButton.dataset.page;
 
-      selectedVehicle = null;
+
+      selectedVehicle =
+        null;
+
 
       closeModal();
+
       layout();
 
       return;
     }
+
 
     const actionButton =
       event.target.closest(
         '[data-action]'
       );
 
-    if (!actionButton) return;
+
+    if (!actionButton) {
+      return;
+    }
+
 
     const action =
       actionButton.dataset.action;
 
+
     const id =
       actionButton.dataset.id;
+
 
     switch (action) {
 
       case 'home':
-        page = 'home';
-        selectedVehicle = null;
+
+        page =
+          'home';
+
+        selectedVehicle =
+          null;
+
         closeModal();
+
         layout();
+
         break;
+
 
       case 'vehicles':
-        page = 'vehicles';
-        selectedVehicle = null;
+
+        page =
+          'vehicles';
+
+        selectedVehicle =
+          null;
+
         closeModal();
+
         layout();
+
         break;
+
 
       case 'vehicleDetail':
-        selectedVehicle = id;
-        page = 'vehicleDetail';
+
+        selectedVehicle =
+          id;
+
+        page =
+          'vehicleDetail';
+
         closeModal();
+
         layout();
+
         break;
+
 
       case 'addFuel':
+
         fuelForm();
+
         break;
 
-      case 'editFuel':
-        {
-          const record =
-            db.fuel.find(
-              x => x.id === id
-            );
 
-          if (record) {
-            fuelForm(record);
-          }
+      case 'editFuel': {
+
+        const record =
+          db.fuel.find(
+            x => x.id === id
+          );
+
+        if (record) {
+          fuelForm(record);
         }
+
         break;
+      }
+
 
       case 'deleteFuel':
+
         deleteFuel(id);
+
         break;
+
 
       case 'addVehicle':
+
         addVehicle();
+
         break;
+
+
+      case 'editVehicle':
+
+        editVehicle(id);
+
+        break;
+
 
       case 'delVehicle':
+
         delVehicle(id);
+
         break;
+
 
       case 'addTrip':
+
         addTrip();
+
         break;
+
 
       case 'sim':
+
         sim();
+
         break;
+
 
       case 'addMaint':
+
         maintForm();
+
         break;
 
-      case 'editMaint':
-        {
-          const record =
-            db.maint.find(
-              x => x.id === id
-            );
 
-          if (record) {
-            maintForm(record);
-          }
+      case 'editMaint': {
+
+        const record =
+          db.maint.find(
+            x => x.id === id
+          );
+
+        if (record) {
+          maintForm(record);
         }
+
         break;
+      }
+
 
       case 'deleteMaint':
+
         deleteMaint(id);
+
         break;
+
 
       case 'exportData':
+
         exportData();
+
         break;
+
 
       case 'importData':
+
         importData();
+
         break;
 
+
       case 'closeModal':
+
         closeModal();
+
         break;
     }
   }
@@ -2466,34 +3511,49 @@ window.addEventListener(
     window.deferredInstallPrompt =
       event;
 
+
     const install =
       $('#install');
 
+
     if (install) {
-      install.hidden = false;
+      install.hidden =
+        false;
     }
   }
 );
+
 
 $('#install')?.addEventListener(
   'click',
   async () => {
 
-    if (!window.deferredInstallPrompt) {
+    if (
+      !window.deferredInstallPrompt
+    ) {
       return;
     }
 
+
     window.deferredInstallPrompt.prompt();
 
-    await window.deferredInstallPrompt.userChoice;
 
-    window.deferredInstallPrompt = null;
+    await
+      window.deferredInstallPrompt
+        .userChoice;
+
+
+    window.deferredInstallPrompt =
+      null;
+
 
     const install =
       $('#install');
 
+
     if (install) {
-      install.hidden = true;
+      install.hidden =
+        true;
     }
   }
 );
@@ -2503,15 +3563,19 @@ $('#install')?.addEventListener(
    SERVICE WORKER
    ========================= */
 
-if ('serviceWorker' in navigator) {
+if (
+  'serviceWorker' in navigator
+) {
 
   navigator.serviceWorker
     .register('./sw.js')
     .catch(error => {
+
       console.error(
         'Service Worker:',
         error
       );
+
     });
 }
 
