@@ -765,4 +765,109 @@ nav button.active {
       13px;
   }
 
+
+/* =========================================================
+   FORMULARIOS A PANTALLA COMPLETA
+========================================================= */
+
+.full-screen-form {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.full-screen-form .modal-backdrop {
+  display: none;
+}
+
+.full-screen-card {
+  position: relative;
+  width: 100%;
+  min-height: 100dvh;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.form-page {
+  width: 100%;
+  max-width: 760px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 18px 18px calc(30px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.form-page-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.form-page-head h1 {
+  margin: 2px 0 5px;
+}
+
+.form-page-head p {
+  margin: 0;
+}
+
+.form-back {
+  flex: 0 0 auto;
+}
+
+.full-form {
+  display: grid;
+  gap: 18px;
+}
+
+.full-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.full-form input,
+.full-form select,
+.full-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-page-actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 0 calc(14px + env(safe-area-inset-bottom));
+  margin-top: 24px;
+  background: var(--bg, #f5f7fb);
+}
+
+@media (max-width: 600px) {
+
+  .form-page {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .form-page-head {
+    gap: 9px;
+  }
+
+  .form-page-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-page-actions button {
+    width: 100%;
+  }
+
 }
