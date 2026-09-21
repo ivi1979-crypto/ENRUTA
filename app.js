@@ -7,18 +7,6 @@ let db = JSON.parse(localStorage.getItem(K) || 'null') || {
   maint: []
 };
 
-let currentPage = 'home';
-let currentVehicleId = null;
-
-let deferredPrompt = null;
-
-let stationCache = {
-  data: null,
-  timestamp: 0
-};
-
-const STATION_CACHE_MS = 10 * 60 * 1000;
-
 
 /* =========================================================
    UTILIDADES
@@ -53,6 +41,7 @@ function vehicle(id) {
 
 
 function closeModal() {
+
   const m = document.querySelector('.modal');
 
   if (m) {
@@ -62,6 +51,7 @@ function closeModal() {
 
 
 function toast(message) {
+
   const el = document.getElementById('toast');
 
   if (!el) return;
@@ -74,78 +64,7 @@ function toast(message) {
 
   window.__toastTimer = setTimeout(() => {
     el.classList.remove('show');
-  }, 2500);
-}
-
-
-function numberValue(value) {
-  const n = Number(
-    String(value ?? '')
-      .replace(',', '.')
-  );
-
-  return Number.isFinite(n) ? n : 0;
-}
-
-
-function distanceKm(lat1, lon1, lat2, lon2) {
-
-  const R = 6371;
-
-  const p1 = Number(lat1) * Math.PI / 180;
-  const p2 = Number(lat2) * Math.PI / 180;
-
-  const dp =
-    (Number(lat2) - Number(lat1)) *
-    Math.PI / 180;
-
-  const dl =
-    (Number(lon2) - Number(lon1)) *
-    Math.PI / 180;
-
-  const a =
-    Math.sin(dp / 2) ** 2 +
-    Math.cos(p1) *
-    Math.cos(p2) *
-    Math.sin(dl / 2) ** 2;
-
-  return R * 2 * Math.atan2(
-    Math.sqrt(a),
-    Math.sqrt(1 - a)
-  );
-}
-
-
-function formatDistance(km) {
-
-  if (!Number.isFinite(km)) {
-    return '';
-  }
-
-  if (km < 1) {
-    return `${Math.round(km * 1000)} m`;
-  }
-
-  return `${km.toFixed(1)} km`;
-}
-
-
-function getField(obj, names) {
-
-  for (const name of names) {
-
-    if (
-      obj &&
-      obj[name] !== undefined &&
-      obj[name] !== null &&
-      obj[name] !== ''
-    ) {
-      return obj[name];
-    }
-
-  }
-
-  return '';
+  }, 2200);
 }
 
 
@@ -162,29 +81,46 @@ function formatDateES(value) {
   const date =
     new Date(`${value}T00:00:00`);
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return value;
   }
 
-  return date.toLocaleDateString('es-ES');
+  return date.toLocaleDateString(
+    'es-ES'
+  );
 }
 
 
 function itvInfo(v) {
 
-  const next = v?.itvNext || '';
+  const next =
+    v?.itvNext || '';
+
 
   if (!next) {
 
     return {
-      label: 'Sin fecha registrada',
-      className: 'muted',
-      icon: '⚪'
+
+      label:
+        'Sin fecha registrada',
+
+      className:
+        'muted',
+
+      icon:
+        '⚪'
+
     };
 
   }
 
-  const todayDate = new Date();
+
+  const todayDate =
+    new Date();
 
   todayDate.setHours(
     0,
@@ -193,61 +129,112 @@ function itvInfo(v) {
     0
   );
 
-  const nextDate =
-    new Date(`${next}T00:00:00`);
 
-  if (Number.isNaN(nextDate.getTime())) {
+  const nextDate =
+    new Date(
+      `${next}T00:00:00`
+    );
+
+
+  if (
+    Number.isNaN(
+      nextDate.getTime()
+    )
+  ) {
 
     return {
-      label: 'Fecha no válida',
-      className: 'danger',
-      icon: '🔴'
+
+      label:
+        'Fecha no válida',
+
+      className:
+        'danger',
+
+      icon:
+        '🔴'
+
     };
 
   }
 
+
   const days =
     Math.ceil(
-      (nextDate - todayDate) /
+      (
+        nextDate -
+        todayDate
+      ) /
       86400000
     );
+
 
   if (days < 0) {
 
     return {
+
       label:
         `Caducada hace ${Math.abs(days)} días`,
-      className: 'danger',
-      icon: '🔴'
+
+      className:
+        'danger',
+
+      icon:
+        '🔴'
+
     };
 
   }
+
 
   if (days === 0) {
 
     return {
-      label: 'Caduca hoy',
-      className: 'warning',
-      icon: '🟠'
+
+      label:
+        'Caduca hoy',
+
+      className:
+        'warning',
+
+      icon:
+        '🟠'
+
     };
 
   }
+
 
   if (days <= 30) {
 
     return {
-      label: `Vence en ${days} días`,
-      className: 'warning',
-      icon: '🟠'
+
+      label:
+        `Vence en ${days} días`,
+
+      className:
+        'warning',
+
+      icon:
+        '🟠'
+
     };
 
   }
 
+
   return {
-    label: 'En vigor',
-    className: 'good',
-    icon: '🟢'
+
+    label:
+      'En vigor',
+
+    className:
+      'good',
+
+    icon:
+      '🟢'
+
   };
+
 }
 
 
@@ -295,10 +282,6 @@ function migrateData() {
       v.itvNext = '';
     }
 
-    if (v.fuelType == null) {
-      v.fuelType = 'diesel';
-    }
-
   });
 
 
@@ -326,26 +309,6 @@ function migrateData() {
 
     if (f.full == null && f.lleno != null) {
       f.full = f.lleno;
-    }
-
-    if (f.station == null) {
-      f.station = '';
-    }
-
-    if (f.stationAddress == null) {
-      f.stationAddress = '';
-    }
-
-    if (f.stationLat == null) {
-      f.stationLat = '';
-    }
-
-    if (f.stationLon == null) {
-      f.stationLon = '';
-    }
-
-    if (f.fuelType == null) {
-      f.fuelType = 'diesel';
     }
 
   });
@@ -461,745 +424,6 @@ function learnedConsumption(vehicleId) {
 }
 
 
-function averageFuelPrice(vehicleId = null) {
-
-  const list =
-    db.fuel.filter(f =>
-      (!vehicleId || f.vehicleId === vehicleId) &&
-      Number(f.price) > 0
-    );
-
-  if (!list.length) {
-    return 0;
-  }
-
-  return avg(
-    list.map(f => Number(f.price))
-  );
-}
-
-
-function totalFuelLiters(vehicleId = null) {
-
-  return db.fuel
-    .filter(f =>
-      !vehicleId ||
-      f.vehicleId === vehicleId
-    )
-    .reduce(
-      (sum, f) =>
-        sum + fuelLiters(f),
-      0
-    );
-}
-
-
-function totalFuelCost(vehicleId = null) {
-
-  return db.fuel
-    .filter(f =>
-      !vehicleId ||
-      f.vehicleId === vehicleId
-    )
-    .reduce(
-      (sum, f) =>
-        sum + fuelAmount(f),
-      0
-    );
-}
-
-
-function totalKmFromFuel(vehicleId) {
-
-  const list =
-    db.fuel
-      .filter(f =>
-        f.vehicleId === vehicleId &&
-        Number(f.km) > 0
-      )
-      .sort((a, b) =>
-        Number(a.km) -
-        Number(b.km)
-      );
-
-  if (list.length < 2) {
-    return 0;
-  }
-
-  return Math.max(
-    0,
-    Number(list[list.length - 1].km) -
-    Number(list[0].km)
-  );
-}
-
-
-function fuelCostPer100Km(vehicleId) {
-
-  const km =
-    totalKmFromFuel(vehicleId);
-
-  const liters =
-    totalFuelLiters(vehicleId);
-
-  if (!km || !liters) {
-    return 0;
-  }
-
-  return liters * 100 / km;
-}
-
-
-function fuelCostPerKm(vehicleId) {
-
-  const km =
-    totalKmFromFuel(vehicleId);
-
-  const cost =
-    totalFuelCost(vehicleId);
-
-  if (!km || !cost) {
-    return 0;
-  }
-
-  return cost / km;
-}
-
-
-/* =========================================================
-   GASOLINERAS · DATOS OFICIALES
-========================================================= */
-
-const FUEL_TYPES = {
-  gasolina95: {
-    label: 'Gasolina 95',
-    fields: [
-      'Precio Gasolina 95 E5',
-      'Precio Gasolina 95 E10',
-      'Precio Gasolina 95 E5 Premium'
-    ]
-  },
-
-  gasolina98: {
-    label: 'Gasolina 98',
-    fields: [
-      'Precio Gasolina 98 E5',
-      'Precio Gasolina 98 E10'
-    ]
-  },
-
-  diesel: {
-    label: 'Diésel',
-    fields: [
-      'Precio Gasoleo A',
-      'Precio Gasóleo A'
-    ]
-  },
-
-  glp: {
-    label: 'GLP',
-    fields: [
-      'Precio Gases licuados del petróleo'
-    ]
-  }
-};
-
-
-function stationFuelPrice(station, fuelType) {
-
-  const config =
-    FUEL_TYPES[fuelType] ||
-    FUEL_TYPES.diesel;
-
-  const value =
-    getField(
-      station,
-      config.fields
-    );
-
-  const n =
-    numberValue(value);
-
-  return n > 0 ? n : 0;
-}
-
-
-function stationCoordinates(station) {
-
-  const lat =
-    numberValue(
-      getField(station, [
-        'Latitud',
-        'latitude',
-        'LATITUD'
-      ])
-    );
-
-  const lon =
-    numberValue(
-      getField(station, [
-        'Longitud (WGS84)',
-        'Longitud',
-        'longitude',
-        'LONGITUD'
-      ])
-    );
-
-  return {
-    lat,
-    lon
-  };
-}
-
-
-function stationName(station) {
-
-  return getField(station, [
-    'Rótulo',
-    'Rotulo',
-    'Nombre',
-    'RazonSocial'
-  ]) || 'Gasolinera';
-}
-
-
-function stationAddress(station) {
-
-  const address =
-    getField(station, [
-      'Dirección',
-      'Direccion'
-    ]);
-
-  const municipality =
-    getField(station, [
-      'Municipio'
-    ]);
-
-  const province =
-    getField(station, [
-      'Provincia'
-    ]);
-
-  return [
-    address,
-    municipality,
-    province
-  ]
-    .filter(Boolean)
-    .join(', ');
-}
-
-
-async function fetchStations() {
-
-  const now =
-    Date.now();
-
-  if (
-    stationCache.data &&
-    now - stationCache.timestamp <
-    STATION_CACHE_MS
-  ) {
-
-    return stationCache.data;
-
-  }
-
-
-  const url =
-    'https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/';
-
-
-  const response =
-    await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
-
-
-  if (!response.ok) {
-    throw new Error(
-      `HTTP ${response.status}`
-    );
-  }
-
-
-  const json =
-    await response.json();
-
-
-  let data =
-    json?.ListaEESSPrecio ||
-    json?.listaEESSPrecio ||
-    json?.stations ||
-    [];
-
-
-  if (!Array.isArray(data)) {
-    data = [];
-  }
-
-
-  stationCache = {
-    data,
-    timestamp: now
-  };
-
-
-  return data;
-}
-
-
-function getUserLocation() {
-
-  return new Promise(
-    (resolve, reject) => {
-
-      if (
-        !navigator.geolocation
-      ) {
-
-        reject(
-          new Error(
-            'La geolocalización no está disponible'
-          )
-        );
-
-        return;
-      }
-
-
-      navigator.geolocation.getCurrentPosition(
-        position => {
-
-          resolve({
-            lat:
-              position.coords.latitude,
-
-            lon:
-              position.coords.longitude
-          });
-
-        },
-
-        error => {
-
-          reject(error);
-
-        },
-
-        {
-          enableHighAccuracy: true,
-          timeout: 12000,
-          maximumAge: 120000
-        }
-      );
-
-    }
-  );
-}
-
-
-async function nearbyStations(
-  lat,
-  lon,
-  fuelType = 'diesel',
-  radius = 15
-) {
-
-  const stations =
-    await fetchStations();
-
-
-  return stations
-    .map(station => {
-
-      const coords =
-        stationCoordinates(station);
-
-      if (
-        !coords.lat ||
-        !coords.lon
-      ) {
-        return null;
-      }
-
-      const distance =
-        distanceKm(
-          lat,
-          lon,
-          coords.lat,
-          coords.lon
-        );
-
-      const price =
-        stationFuelPrice(
-          station,
-          fuelType
-        );
-
-      return {
-        raw: station,
-        name:
-          stationName(station),
-        address:
-          stationAddress(station),
-        lat:
-          coords.lat,
-        lon:
-          coords.lon,
-        distance,
-        price
-      };
-
-    })
-    .filter(Boolean)
-    .filter(s =>
-      s.distance <= radius
-    )
-    .filter(s =>
-      s.price > 0
-    )
-    .sort((a, b) =>
-      a.distance - b.distance
-    )
-    .slice(0, 30);
-}
-
-
-function stationSearchCard(
-  station,
-  fuelType
-) {
-
-  return `
-
-    <div class="card">
-
-      <div class="list-row">
-
-        <div>
-
-          <strong>
-            ${escapeHtml(station.name)}
-          </strong>
-
-          <small>
-            ${escapeHtml(station.address || 'Dirección no disponible')}
-          </small>
-
-          <small>
-            📍 ${formatDistance(station.distance)}
-          </small>
-
-        </div>
-
-
-        <div style="text-align:right">
-
-          <strong>
-            ${Number(station.price).toFixed(3)} €/L
-          </strong>
-
-          <small>
-            ${escapeHtml(
-              FUEL_TYPES[fuelType]?.label ||
-              fuelType
-            )}
-          </small>
-
-        </div>
-
-      </div>
-
-
-      <div class="actions">
-
-        <button
-          type="button"
-          class="primary"
-          onclick='selectStation(${JSON.stringify({
-            name: station.name,
-            address: station.address,
-            lat: station.lat,
-            lon: station.lon,
-            price: station.price
-          })})'
-        >
-          Usar este precio
-        </button>
-
-      </div>
-
-    </div>
-
-  `;
-}
-
-
-async function findNearbyStations() {
-
-  const result =
-    document.getElementById(
-      'stationResults'
-    );
-
-  const button =
-    document.getElementById(
-      'findStationsButton'
-    );
-
-  const fuelSelect =
-    document.querySelector(
-      '#fuelForm select[name="fuelType"]'
-    );
-
-  if (!result) {
-    return;
-  }
-
-
-  const fuelType =
-    fuelSelect?.value ||
-    'diesel';
-
-
-  result.innerHTML = `
-    <div class="card">
-      <p>
-        📍 Obteniendo tu ubicación...
-      </p>
-    </div>
-  `;
-
-
-  if (button) {
-    button.disabled = true;
-  }
-
-
-  try {
-
-    const position =
-      await getUserLocation();
-
-
-    result.innerHTML = `
-      <div class="card">
-        <p>
-          🔎 Buscando gasolineras cercanas...
-        </p>
-      </div>
-    `;
-
-
-    const stations =
-      await nearbyStations(
-        position.lat,
-        position.lon,
-        fuelType,
-        15
-      );
-
-
-    window.__lastFuelLocation =
-      position;
-
-
-    if (!stations.length) {
-
-      result.innerHTML = `
-        <div class="card">
-
-          <h3>
-            No se han encontrado gasolineras
-          </h3>
-
-          <p class="muted">
-            Puedes introducir la gasolinera
-            y el precio manualmente.
-          </p>
-
-        </div>
-      `;
-
-      return;
-    }
-
-
-    result.innerHTML = `
-
-      <div class="card">
-
-        <h3>
-          ⛽ Gasolineras cercanas
-        </h3>
-
-        <p class="muted">
-          ${stations.length}
-          estaciones encontradas.
-          Ordenadas por distancia.
-        </p>
-
-      </div>
-
-      ${stations
-        .map(s =>
-          stationSearchCard(
-            s,
-            fuelType
-          )
-        )
-        .join('')
-      }
-
-    `;
-
-  } catch (error) {
-
-    console.warn(
-      'Gasolineras:',
-      error
-    );
-
-
-    let message =
-      'No se ha podido obtener la ubicación o los precios.';
-
-
-    if (
-      error?.code === 1
-    ) {
-
-      message =
-        'Permiso de ubicación denegado. Puedes activarlo en los permisos de ENRUTA.';
-
-    }
-
-
-    result.innerHTML = `
-
-      <div class="card">
-
-        <h3>
-          ⚠️ No se ha podido realizar la búsqueda
-        </h3>
-
-        <p class="muted">
-          ${escapeHtml(message)}
-        </p>
-
-        <p class="muted">
-          También puedes registrar el repostaje
-          manualmente.
-        </p>
-
-      </div>
-
-    `;
-
-  } finally {
-
-    if (button) {
-      button.disabled = false;
-    }
-
-  }
-}
-
-
-function selectStation(station) {
-
-  const stationNameInput =
-    document.querySelector(
-      '#fuelForm input[name="station"]'
-    );
-
-  const addressInput =
-    document.querySelector(
-      '#fuelForm input[name="stationAddress"]'
-    );
-
-  const priceInput =
-    document.querySelector(
-      '#fuelForm input[name="price"]'
-    );
-
-  if (stationNameInput) {
-    stationNameInput.value =
-      station.name || '';
-  }
-
-  if (addressInput) {
-    addressInput.value =
-      station.address || '';
-  }
-
-  if (priceInput) {
-    priceInput.value =
-      Number(station.price || 0).toFixed(3);
-
-    priceInput.dispatchEvent(
-      new Event('input')
-    );
-  }
-
-
-  window.__selectedStation = station;
-
-
-  const result =
-    document.getElementById(
-      'stationResults'
-    );
-
-  if (result) {
-
-    result.innerHTML = `
-
-      <div class="card">
-
-        <h3>
-          ✅ Gasolinera seleccionada
-        </h3>
-
-        <strong>
-          ${escapeHtml(
-            station.name ||
-            'Gasolinera'
-          )}
-        </strong>
-
-        <p class="muted">
-          ${escapeHtml(
-            station.address || ''
-          )}
-        </p>
-
-        <p>
-          Precio:
-          <strong>
-            ${Number(station.price).toFixed(3)}
-            €/L
-          </strong>
-        </p>
-
-      </div>
-
-    `;
-
-  }
-
-
-  toast(
-    'Gasolinera seleccionada'
-  );
-}
-
-
 /* =========================================================
    LAYOUT
 ========================================================= */
@@ -1253,7 +477,11 @@ function pageLayout(
 function home() {
 
   const totalFuel =
-    totalFuelCost();
+    db.fuel.reduce(
+      (sum, f) =>
+        sum + fuelAmount(f),
+      0
+    );
 
 
   const totalMaint =
@@ -1270,40 +498,6 @@ function home() {
 
   const totalVehicles =
     db.vehicles.length;
-
-
-  const currentYear =
-    String(
-      new Date().getFullYear()
-    );
-
-
-  const yearlyFuel =
-    db.fuel
-      .filter(f =>
-        String(f.date || '').startsWith(
-          currentYear
-        )
-      )
-      .reduce(
-        (sum, f) =>
-          sum + fuelAmount(f),
-        0
-      );
-
-
-  const yearlyMaint =
-    db.maint
-      .filter(m =>
-        String(m.date || '').startsWith(
-          currentYear
-        )
-      )
-      .reduce(
-        (sum, m) =>
-          sum + Number(m.amount || 0),
-        0
-      );
 
 
   return pageLayout(
@@ -1384,65 +578,7 @@ function home() {
 
       <div class="card">
 
-        <h3>
-          📊 Este año
-        </h3>
-
-
-        <div class="detail-grid">
-
-          <div>
-
-            <span>
-              Combustible
-            </span>
-
-            <strong>
-              ${eur(yearlyFuel)}
-            </strong>
-
-          </div>
-
-
-          <div>
-
-            <span>
-              Mantenimiento
-            </span>
-
-            <strong>
-              ${eur(yearlyMaint)}
-            </strong>
-
-          </div>
-
-
-          <div>
-
-            <span>
-              Precio medio
-            </span>
-
-            <strong>
-              ${
-                averageFuelPrice()
-                  ? `${averageFuelPrice().toFixed(3)} €/L`
-                  : '—'
-              }
-            </strong>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <div class="card">
-
-        <h3>
-          Resumen
-        </h3>
+        <h3>Resumen</h3>
 
         ${
           db.vehicles.length
@@ -1452,9 +588,6 @@ function home() {
 
                   const consumption =
                     learnedConsumption(v.id);
-
-                  const itv =
-                    itvInfo(v);
 
                   return `
 
@@ -1476,12 +609,6 @@ function home() {
                               ? escapeHtml(v.plate)
                               : ''
                           }
-                        </small>
-
-                        <small>
-                          ITV:
-                          ${itv.icon}
-                          ${itv.label}
                         </small>
 
                       </div>
@@ -1788,18 +915,6 @@ function vehicleDetail(id) {
     learnedConsumption(id);
 
 
-  const avgPrice =
-    averageFuelPrice(id);
-
-
-  const costPer100 =
-    fuelCostPer100Km(id);
-
-
-  const costPerKm =
-    fuelCostPerKm(id);
-
-
   const itv =
     itvInfo(v);
 
@@ -1934,87 +1049,6 @@ function vehicleDetail(id) {
 
         <div class="card">
 
-          <h3>
-            📊 Estadísticas
-          </h3>
-
-
-          <div class="detail-grid">
-
-            <div>
-
-              <span>
-                Consumo real
-              </span>
-
-              <strong>
-                ${
-                  consumption
-                    ? `${consumption.toFixed(2)} L/100 km`
-                    : '—'
-                }
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Precio medio
-              </span>
-
-              <strong>
-                ${
-                  avgPrice
-                    ? `${avgPrice.toFixed(3)} €/L`
-                    : '—'
-                }
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Coste combustible / 100 km
-              </span>
-
-              <strong>
-                ${
-                  costPer100
-                    ? `${costPer100.toFixed(2)} €`
-                    : '—'
-                }
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Coste combustible / km
-              </span>
-
-              <strong>
-                ${
-                  costPerKm
-                    ? `${costPerKm.toFixed(3)} €`
-                    : '—'
-                }
-              </strong>
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <div class="card">
-
           <div class="section-head">
 
             <div>
@@ -2139,15 +1173,14 @@ function vehicleDetail(id) {
             <div>
 
               <span>
-                Combustible
+                Consumo indicado
               </span>
 
               <strong>
                 ${
-                  escapeHtml(
-                    FUEL_TYPES[v.fuelType]?.label ||
-                    'Diésel'
-                  )
+                  v.consumption
+                    ? `${v.consumption} L/100 km`
+                    : '-'
                 }
               </strong>
 
@@ -2157,13 +1190,13 @@ function vehicleDetail(id) {
             <div>
 
               <span>
-                Consumo indicado
+                Consumo calculado
               </span>
 
               <strong>
                 ${
-                  v.consumption
-                    ? `${v.consumption} L/100 km`
+                  consumption
+                    ? `${consumption.toFixed(2)} L/100 km`
                     : '-'
                 }
               </strong>
@@ -2233,23 +1266,6 @@ function vehicleDetail(id) {
 
               <strong>
                 ${totalLiters.toFixed(1)} L
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Precio medio
-              </span>
-
-              <strong>
-                ${
-                  avgPrice
-                    ? `${avgPrice.toFixed(3)} €/L`
-                    : '—'
-                }
               </strong>
 
             </div>
@@ -2417,23 +1433,8 @@ function vehicleDetail(id) {
                           ${f.date || ''}
                         </strong>
 
-                        ${
-                          f.station
-                            ? `
-                              <small>
-                                ⛽ ${escapeHtml(f.station)}
-                              </small>
-                            `
-                            : ''
-                        }
-
                         <small>
                           ${fuelLiters(f).toFixed(2)} L
-                          ${
-                            f.price
-                              ? ` · ${Number(f.price).toFixed(3)} €/L`
-                              : ''
-                          }
                           ${
                             f.km
                               ? ` · ${Number(f.km).toLocaleString('es-ES')} km`
@@ -2542,6 +1543,7 @@ function itvForm(id) {
   const v =
     vehicle(id);
 
+
   if (!v) {
     return;
   }
@@ -2620,8 +1622,13 @@ function itvForm(id) {
 
           <p class="muted">
 
-            ${itvInfo(v).icon}
-            ${itvInfo(v).label}
+            ${
+              itvInfo(v).icon
+            }
+
+            ${
+              itvInfo(v).label
+            }
 
           </p>
 
@@ -2695,6 +1702,7 @@ function itvForm(id) {
 
         v.itvNext =
           next;
+
 
         v.updatedAt =
           Date.now();
@@ -2837,47 +1845,6 @@ function vehicleForm(record = null) {
 
         <label>
 
-          Tipo de combustible
-
-          <select
-            name="fuelType"
-          >
-
-            <option
-              value="diesel"
-              ${v.fuelType === 'diesel' ? 'selected' : ''}
-            >
-              Diésel
-            </option>
-
-            <option
-              value="gasolina95"
-              ${v.fuelType === 'gasolina95' ? 'selected' : ''}
-            >
-              Gasolina 95
-            </option>
-
-            <option
-              value="gasolina98"
-              ${v.fuelType === 'gasolina98' ? 'selected' : ''}
-            >
-              Gasolina 98
-            </option>
-
-            <option
-              value="glp"
-              ${v.fuelType === 'glp' ? 'selected' : ''}
-            >
-              GLP
-            </option>
-
-          </select>
-
-        </label>
-
-
-        <label>
-
           Consumo indicado (L/100 km)
 
           <input
@@ -2969,7 +1936,6 @@ function vehicleForm(record = null) {
 
         e.preventDefault();
 
-
         const fd =
           new FormData(e.target);
 
@@ -3013,10 +1979,6 @@ function vehicleForm(record = null) {
           year:
             fd.get('year'),
 
-          fuelType:
-            fd.get('fuelType') ||
-            'diesel',
-
           consumption:
             Number(
               fd.get('consumption') || 0
@@ -3031,10 +1993,7 @@ function vehicleForm(record = null) {
 
         if (editing) {
 
-          Object.assign(
-            v,
-            data
-          );
+          Object.assign(v, data);
 
           toast(
             'Vehículo actualizado'
@@ -3158,63 +2117,6 @@ function fuelPage() {
       </div>
 
 
-      ${
-        list.length
-          ? `
-            <div class="card">
-
-              <div class="detail-grid">
-
-                <div>
-
-                  <span>
-                    Gasto total
-                  </span>
-
-                  <strong>
-                    ${eur(totalFuelCost())}
-                  </strong>
-
-                </div>
-
-
-                <div>
-
-                  <span>
-                    Litros
-                  </span>
-
-                  <strong>
-                    ${totalFuelLiters().toFixed(1)} L
-                  </strong>
-
-                </div>
-
-
-                <div>
-
-                  <span>
-                    Precio medio
-                  </span>
-
-                  <strong>
-                    ${
-                      averageFuelPrice()
-                        ? `${averageFuelPrice().toFixed(3)} €/L`
-                        : '—'
-                    }
-                  </strong>
-
-                </div>
-
-              </div>
-
-            </div>
-          `
-          : ''
-      }
-
-
       <div class="stack">
 
         ${
@@ -3250,16 +2152,6 @@ function fuelPage() {
                                 : ''
                             }
                           </small>
-
-                          ${
-                            f.station
-                              ? `
-                                <small>
-                                  ⛽ ${escapeHtml(f.station)}
-                                </small>
-                              `
-                              : ''
-                          }
 
                           <p>
                             ${fuelLiters(f).toFixed(2)} L
@@ -3342,36 +2234,6 @@ function fuelForm(id = null) {
       : null;
 
 
-  if (
-    editing &&
-    !record
-  ) {
-
-    toast(
-      'No se encontró el repostaje'
-    );
-
-    return;
-
-  }
-
-
-  const selectedVehicle =
-    record?.vehicleId ||
-    currentVehicleId ||
-    '';
-
-
-  const v =
-    vehicle(selectedVehicle);
-
-
-  const defaultFuelType =
-    record?.fuelType ||
-    v?.fuelType ||
-    'diesel';
-
-
   const f =
     record || {
 
@@ -3379,15 +2241,9 @@ function fuelForm(id = null) {
         today(),
 
       full:
-        true,
-
-      fuelType:
-        defaultFuelType
+        true
 
     };
-
-
-  window.__selectedStation = null;
 
 
   fullScreenForm(`
@@ -3468,47 +2324,6 @@ function fuelForm(id = null) {
 
         <label>
 
-          Combustible
-
-          <select
-            name="fuelType"
-          >
-
-            <option
-              value="diesel"
-              ${defaultFuelType === 'diesel' ? 'selected' : ''}
-            >
-              Diésel
-            </option>
-
-            <option
-              value="gasolina95"
-              ${defaultFuelType === 'gasolina95' ? 'selected' : ''}
-            >
-              Gasolina 95
-            </option>
-
-            <option
-              value="gasolina98"
-              ${defaultFuelType === 'gasolina98' ? 'selected' : ''}
-            >
-              Gasolina 98
-            </option>
-
-            <option
-              value="glp"
-              ${defaultFuelType === 'glp' ? 'selected' : ''}
-            >
-              GLP
-            </option>
-
-          </select>
-
-        </label>
-
-
-        <label>
-
           Fecha
 
           <input
@@ -3534,60 +2349,6 @@ function fuelForm(id = null) {
           >
 
         </label>
-
-
-        <div class="card">
-
-          <h3>
-            ⛽ Gasolinera
-          </h3>
-
-          <p class="muted">
-            Busca las gasolineras cercanas
-            y sus precios actuales.
-          </p>
-
-
-          <button
-            id="findStationsButton"
-            type="button"
-            class="primary"
-          >
-            📍 Buscar gasolineras cercanas
-          </button>
-
-
-          <div
-            id="stationResults"
-            style="margin-top:12px"
-          ></div>
-
-
-          <label>
-
-            Nombre de gasolinera
-
-            <input
-              name="station"
-              value="${escapeAttr(f.station || '')}"
-              placeholder="Ej. Repsol, Cepsa..."
-            >
-
-          </label>
-
-
-          <label>
-
-            Dirección
-
-            <input
-              name="stationAddress"
-              value="${escapeAttr(f.stationAddress || '')}"
-            >
-
-          </label>
-
-        </div>
 
 
         <label>
@@ -3636,14 +2397,6 @@ function fuelForm(id = null) {
         </label>
 
 
-        <div
-          id="fuelCalculatedAmount"
-          class="result-box"
-        >
-          Introduce litros y precio para calcular.
-        </div>
-
-
         <label class="check">
 
           <input
@@ -3690,149 +2443,9 @@ function fuelForm(id = null) {
   `);
 
 
-  const form =
-    document.getElementById(
-      'fuelForm'
-    );
-
-
-  form
-    ?.querySelector(
-      '#findStationsButton'
-    )
-    ?.addEventListener(
-      'click',
-      findNearbyStations
-    );
-
-
-  function updateCalculatedAmount() {
-
-    const liters =
-      numberValue(
-        form.querySelector(
-          '[name="liters"]'
-        )?.value
-      );
-
-    const price =
-      numberValue(
-        form.querySelector(
-          '[name="price"]'
-        )?.value
-      );
-
-    const amount =
-      liters *
-      price;
-
-
-    const amountInput =
-      form.querySelector(
-        '[name="amount"]'
-      );
-
-
-    const result =
-      document.getElementById(
-        'fuelCalculatedAmount'
-      );
-
-
-    if (
-      liters > 0 &&
-      price > 0
-    ) {
-
-      if (
-        document.activeElement !==
-        amountInput
-      ) {
-        amountInput.value =
-          amount.toFixed(2);
-      }
-
-
-      if (result) {
-
-        result.innerHTML = `
-          <strong>
-            ${eur(amount)}
-          </strong>
-          <small>
-            ${liters.toFixed(2)} L ×
-            ${price.toFixed(3)} €/L
-          </small>
-        `;
-
-      }
-
-    } else if (result) {
-
-      result.innerHTML =
-        'Introduce litros y precio para calcular.';
-
-    }
-
-  }
-
-
-  form
-    ?.querySelectorAll(
-      '[name="liters"], [name="price"]'
-    )
-    .forEach(input => {
-
-      input.addEventListener(
-        'input',
-        updateCalculatedAmount
-      );
-
-    });
-
-
-  form
-    ?.querySelector(
-      '[name="vehicleId"]'
-    )
-    ?.addEventListener(
-      'change',
-      event => {
-
-        const selected =
-          vehicle(event.target.value);
-
-        if (!selected) {
-          return;
-        }
-
-
-        const fuelSelect =
-          form.querySelector(
-            '[name="fuelType"]'
-          );
-
-
-        if (
-          fuelSelect &&
-          !editing
-        ) {
-
-          fuelSelect.value =
-            selected.fuelType ||
-            'diesel';
-
-        }
-
-      }
-    );
-
-
-  updateCalculatedAmount();
-
-
-  form
-    ?.addEventListener(
+  document
+    .getElementById('fuelForm')
+    .addEventListener(
       'submit',
       e => {
 
@@ -3841,6 +2454,12 @@ function fuelForm(id = null) {
 
         const fd =
           new FormData(e.target);
+
+
+        let amount =
+          Number(
+            fd.get('amount') || 0
+          );
 
 
         const liters =
@@ -3855,13 +2474,8 @@ function fuelForm(id = null) {
           );
 
 
-        let amount =
-          Number(
-            fd.get('amount') || 0
-          );
-
-
         if (
+          !amount &&
           liters &&
           price
         ) {
@@ -3870,10 +2484,6 @@ function fuelForm(id = null) {
             liters * price;
 
         }
-
-
-        const station =
-          window.__selectedStation;
 
 
         const data = {
@@ -3896,31 +2506,7 @@ function fuelForm(id = null) {
           amount,
 
           full:
-            fd.get('full') === 'on',
-
-          fuelType:
-            fd.get('fuelType') ||
-            'diesel',
-
-          station:
-            fd.get('station')?.trim() ||
-            station?.name ||
-            '',
-
-          stationAddress:
-            fd.get('stationAddress')?.trim() ||
-            station?.address ||
-            '',
-
-          stationLat:
-            station?.lat ||
-            record?.stationLat ||
-            '',
-
-          stationLon:
-            station?.lon ||
-            record?.stationLon ||
-            ''
+            fd.get('full') === 'on'
 
         };
 
@@ -3958,21 +2544,7 @@ function fuelForm(id = null) {
 
         closeModal();
 
-
-        if (
-          currentPage === 'vehicleDetail' &&
-          currentVehicleId
-        ) {
-
-          vehicleDetail(
-            currentVehicleId
-          );
-
-        } else {
-
-          render('fuel');
-
-        }
+        render('fuel');
 
       }
     );
@@ -4142,6 +2714,10 @@ function maintenancePage() {
   );
 }
 
+
+/* =========================================================
+   FORMULARIO MANTENIMIENTO
+========================================================= */
 
 function maintenanceForm(
   id = null,
@@ -4658,6 +3234,10 @@ function tripsPage() {
 }
 
 
+/* =========================================================
+   FORMULARIO VIAJE
+========================================================= */
+
 function tripForm(id = null) {
 
   const editing = !!id;
@@ -4995,6 +3575,10 @@ function tripForm(id = null) {
 }
 
 
+/* =========================================================
+   BORRAR VIAJE
+========================================================= */
+
 function deleteTrip(id) {
 
   const trip =
@@ -5135,62 +3719,6 @@ function more() {
             >
               🧮 Simulador de viaje
             </button>
-
-          </div>
-
-        </div>
-
-
-        <div class="card">
-
-          <h3>
-            📊 Estadísticas generales
-          </h3>
-
-
-          <div class="detail-grid">
-
-            <div>
-
-              <span>
-                Combustible
-              </span>
-
-              <strong>
-                ${eur(totalFuelCost())}
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Litros
-              </span>
-
-              <strong>
-                ${totalFuelLiters().toFixed(1)} L
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Precio medio
-              </span>
-
-              <strong>
-                ${
-                  averageFuelPrice()
-                    ? `${averageFuelPrice().toFixed(3)} €/L`
-                    : '—'
-                }
-              </strong>
-
-            </div>
 
           </div>
 
@@ -5448,6 +3976,7 @@ document.addEventListener(
 
         migrateData();
 
+
         save();
 
 
@@ -5462,10 +3991,6 @@ document.addEventListener(
 
 
       } catch (error) {
-
-        console.error(
-          error
-        );
 
         alert(
           'No se ha podido importar la copia.'
@@ -5642,16 +4167,6 @@ function simulator() {
                 </strong>
               </p>
 
-              <p>
-                Coste por 100 km:
-                <strong>
-                  ${eur(
-                    consumption *
-                    price
-                  )}
-                </strong>
-              </p>
-
             </div>
 
           `;
@@ -5737,6 +4252,11 @@ function modal(content) {
 /* =========================================================
    NAVEGACIÓN
 ========================================================= */
+
+let currentPage = 'home';
+
+let currentVehicleId = null;
+
 
 function render(page) {
 
@@ -5886,6 +4406,10 @@ document
 /* =========================================================
    INSTALACIÓN PWA
 ========================================================= */
+
+let deferredPrompt =
+  null;
+
 
 window.addEventListener(
   'beforeinstallprompt',
