@@ -6148,4 +6148,4 @@ document.addEventListener(
    INICIO
 ========================================================= */
 
-render('home');
+initSupabaseAuth();
