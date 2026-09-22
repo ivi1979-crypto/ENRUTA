@@ -1876,7 +1876,138 @@ function vehicles() {
 /* =========================================================
    FICHA VEHÍCULO
 ========================================================= */
+function updateVehicleCostPeriod(vehicleId) {
 
+  const fromInput =
+    document.getElementById(
+      `costFrom-${vehicleId}`
+    );
+
+  const toInput =
+    document.getElementById(
+      `costTo-${vehicleId}`
+    );
+
+  const from =
+    fromInput?.value || '';
+
+  const to =
+    toInput?.value || '';
+
+  const result =
+    document.getElementById(
+      `costPeriodResult-${vehicleId}`
+    );
+
+  if (!result) {
+    return;
+  }
+
+  if (!from || !to) {
+
+    result.innerHTML = `
+      <p class="muted">
+        Selecciona las dos fechas para calcular el coste.
+      </p>
+    `;
+
+    return;
+  }
+
+  if (from > to) {
+
+    result.innerHTML = `
+      <p class="muted">
+        La fecha inicial no puede ser posterior a la fecha final.
+      </p>
+    `;
+
+    return;
+  }
+
+  const fuel =
+    db.fuel.filter(f =>
+      f.vehicleId === vehicleId &&
+      String(f.date || '') >= from &&
+      String(f.date || '') <= to
+    );
+
+  const maint =
+    db.maint.filter(m =>
+      m.vehicleId === vehicleId &&
+      String(m.date || '') >= from &&
+      String(m.date || '') <= to
+    );
+
+  const trips =
+    db.trips.filter(t =>
+      t.vehicleId === vehicleId &&
+      String(t.date || '') >= from &&
+      String(t.date || '') <= to
+    );
+
+  const fuelTotal =
+    fuel.reduce(
+      (sum, f) =>
+        sum + fuelAmount(f),
+      0
+    );
+
+  const maintTotal =
+    maint.reduce(
+      (sum, m) =>
+        sum + Number(m.amount || 0),
+      0
+    );
+
+  const tripTotal =
+    trips.reduce(
+      (sum, t) =>
+        sum + Number(t.cost || 0),
+      0
+    );
+
+  const total =
+    fuelTotal +
+    maintTotal +
+    tripTotal;
+
+  result.innerHTML = `
+
+    <div class="detail-grid">
+
+      <div>
+        <span>⛽ Combustible</span>
+        <strong>
+          ${eur(fuelTotal)}
+        </strong>
+      </div>
+
+      <div>
+        <span>🔧 Mantenimiento</span>
+        <strong>
+          ${eur(maintTotal)}
+        </strong>
+      </div>
+
+      <div>
+        <span>🚐 Viajes</span>
+        <strong>
+          ${eur(tripTotal)}
+        </strong>
+      </div>
+
+      <div>
+        <span>💰 Coste total</span>
+        <strong>
+          ${eur(total)}
+        </strong>
+      </div>
+
+    </div>
+
+  `;
+}
 function vehicleDetail(id) {
 
   const v = vehicle(id);
@@ -2077,7 +2208,56 @@ function vehicleDetail(id) {
         <div class="card">
 
           <div class="section-head">
+        <div class="card">
 
+          <h3>📅 Coste por periodo</h3>
+
+          <p class="muted">
+            Consulta cuánto has gastado con este vehículo entre dos fechas.
+          </p>
+
+          <div class="detail-grid">
+
+            <label>
+
+              Desde
+
+              <input
+                type="date"
+                id="costFrom-${v.id}"
+                onchange="updateVehicleCostPeriod('${v.id}')"
+              >
+
+            </label>
+
+
+            <label>
+
+              Hasta
+
+              <input
+                type="date"
+                id="costTo-${v.id}"
+                onchange="updateVehicleCostPeriod('${v.id}')"
+              >
+
+            </label>
+
+          </div>
+
+
+          <div
+            id="costPeriodResult-${v.id}"
+            style="margin-top:16px"
+          >
+
+            <p class="muted">
+              Selecciona las dos fechas para calcular el coste.
+            </p>
+
+          </div>
+
+        </div>
             <div>
 
               <h3>🔎 ITV</h3>
