@@ -62,9 +62,8 @@ let currentWorkspaceId = null;
 async function initSupabaseAuth() {
 
   if (
-    !window.supabase ||
-    !window.supabase.createClient ||
-    !window.supabaseClient
+     !window.supabase ||
+     !window.supabase.createClient
   ) {
     console.error('Supabase no está disponible');
     render('home');
