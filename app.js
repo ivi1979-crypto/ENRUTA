@@ -51,7 +51,283 @@ function getAppPosition(success, error, options = {}) {
     );
   }
 }
+/* =========================================================
+   SUPABASE - AUTENTICACIÓN
+========================================================= */
 
+let currentUser = null;
+let currentWorkspaceId = null;
+
+
+async function initSupabaseAuth() {
+
+  if (
+    !window.supabase ||
+    !window.supabase.createClient ||
+    !window.supabaseClient
+  ) {
+    console.error('Supabase no está disponible');
+    render('home');
+    return;
+  }
+
+  const {
+    data: { session },
+    error
+  } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    console.error(
+      'Error obteniendo sesión:',
+      error
+    );
+
+    showLogin();
+
+    return;
+  }
+
+  if (!session?.user) {
+
+    showLogin();
+
+    return;
+  }
+
+  currentUser =
+    session.user;
+
+
+  const {
+    data: membership,
+    error: membershipError
+  } =
+    await supabaseClient
+      .from('workspace_members')
+      .select(`
+        workspace_id,
+        role,
+        workspaces (
+          id,
+          name
+        )
+      `)
+      .eq(
+        'user_id',
+        currentUser.id
+      )
+      .limit(1)
+      .maybeSingle();
+
+
+  if (membershipError) {
+
+    console.error(
+      'Error obteniendo espacio ENRUTA:',
+      membershipError
+    );
+
+    showLogin(
+      'No se ha podido cargar el espacio ENRUTA.'
+    );
+
+    return;
+  }
+
+
+  if (!membership) {
+
+    showLogin(
+      'Tu usuario todavía no está asociado a ENRUTA Familia.'
+    );
+
+    return;
+  }
+
+
+  currentWorkspaceId =
+    membership.workspace_id;
+
+
+  console.log(
+    'ENRUTA conectado:',
+    currentUser.email,
+    membership.workspaces?.name
+  );
+
+
+  render('home');
+}
+
+
+function showLogin(message = '') {
+
+  const app =
+    document.getElementById('app');
+
+  if (!app) return;
+
+
+  app.innerHTML = `
+
+    <section class="page">
+
+      <div class="form-page">
+
+        <div class="form-page-head">
+
+          <div>
+
+            <h1>ENRUTA</h1>
+
+            <p class="muted">
+              Inicia sesión para continuar.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        ${
+          message
+            ? `
+              <div class="card">
+                <p class="muted">
+                  ${escapeHtml(message)}
+                </p>
+              </div>
+            `
+            : ''
+        }
+
+
+        <form
+          id="loginForm"
+          class="full-form"
+        >
+
+          <label>
+
+            Correo electrónico
+
+            <input
+              type="email"
+              name="email"
+              autocomplete="email"
+              required
+            >
+
+          </label>
+
+
+          <label>
+
+            Contraseña
+
+            <input
+              type="password"
+              name="password"
+              autocomplete="current-password"
+              required
+            >
+
+          </label>
+
+
+          <div class="form-page-actions">
+
+            <button
+              type="submit"
+              class="primary"
+            >
+              Entrar
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+
+    </section>
+
+  `;
+
+
+  document
+    .getElementById('loginForm')
+    .addEventListener(
+      'submit',
+      async event => {
+
+        event.preventDefault();
+
+        const fd =
+          new FormData(event.target);
+
+
+        const email =
+          String(
+            fd.get('email') || ''
+          ).trim();
+
+        const password =
+          String(
+            fd.get('password') || ''
+          );
+
+
+        const button =
+          event.target.querySelector(
+            'button[type="submit"]'
+          );
+
+
+        if (button) {
+          button.disabled = true;
+          button.textContent =
+            'Entrando...';
+        }
+
+
+        const {
+          data,
+          error
+        } =
+          await supabaseClient.auth
+            .signInWithPassword({
+              email,
+              password
+            });
+
+
+        if (error) {
+
+          console.error(
+            'Error de inicio de sesión:',
+            error
+          );
+
+
+          showLogin(
+            'Correo o contraseña incorrectos.'
+          );
+
+          return;
+        }
+
+
+        currentUser =
+          data.user;
+
+
+        await initSupabaseAuth();
+
+      }
+    );
+
+}
 const K = 'enruta04';
 
 let db = JSON.parse(localStorage.getItem(K) || 'null') || {
