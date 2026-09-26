@@ -3992,13 +3992,13 @@ function fuelForm(id = null) {
           fd.get('stationAddress') || '',
 
         stationLat:
-          selectedFuelStation?.lat ||
-          record?.stationLat ||
+          selectedFuelStation?.lat ??
+          record?.stationLat ??
           '',
 
         stationLng:
-          selectedFuelStation?.lng ||
-          record?.stationLng ||
+          selectedFuelStation?.lng ??
+          record?.stationLng ??
           ''
 
       };
