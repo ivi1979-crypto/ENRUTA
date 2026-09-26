@@ -159,6 +159,321 @@ async function initSupabaseAuth() {
 }
 
 
+async function syncToSupabase() {
+  if (!supabaseClient || !currentUser || !currentWorkspaceId) {
+    return;
+  }
+
+  alert('ENRUTA: iniciando subida a Supabase');
+
+  const now = new Date().toISOString();
+
+  try {
+    const vehicles = db.vehicles.map(v => ({
+      id: v.id,
+      name: v.name || '',
+      brand: v.brand || '',
+      model: v.model || '',
+      plate: v.plate || '',
+      year: v.year ?? null,
+      consumption: v.consumption ?? null,
+      itv_last: v.itvLast || null,
+      itv_next: v.itvNext || null,
+      data: v.data || {},
+      workspace_id: currentWorkspaceId,
+      created_at: v.createdAt || now,
+      updated_at: now
+    }));
+
+    if (vehicles.length) {
+      const { error } = await supabaseClient
+        .from('vehicles')
+        .upsert(vehicles, { onConflict: 'id' });
+
+      if (error) {
+        alert(
+          'ERROR SUBIENDO VEHÍCULO\\n\\n' +
+          error.message
+        );
+        throw error;
+      }
+    }
+
+    const fuel = db.fuel.map(f => ({
+      id: f.id,
+      vehicle_id: f.vehicleId,
+      date: f.date || null,
+      km: f.km ?? null,
+      fuel_type: f.fuelType || 'diesel',
+      liters: f.liters ?? null,
+      price: f.price ?? null,
+      amount: f.amount ?? 0,
+      full_tank: !!f.full,
+      station_name: f.stationName || null,
+      station_address: f.stationAddress || null,
+      station_lat: f.stationLat ?? null,
+      station_lng: f.stationLng ?? null,
+      data: f.data || {},
+      workspace_id: currentWorkspaceId,
+      created_at: f.createdAt || now,
+      updated_at: now
+    }));
+
+    if (fuel.length) {
+      const { error } = await supabaseClient
+        .from('fuel')
+        .upsert(fuel, { onConflict: 'id' });
+
+      if (error) throw error;
+    }
+
+    const trips = db.trips.map(t => ({
+      id: t.id,
+      vehicle_id: t.vehicleId,
+      date: t.date || null,
+      name: t.name || '',
+      destination: t.destination || '',
+      km: t.km ?? 0,
+      cost: t.cost ?? 0,
+      data: {
+        ...(t.data || {}),
+        origin: t.origin || '',
+        notes: t.notes || ''
+      },
+      workspace_id: currentWorkspaceId,
+      created_at: t.createdAt || now,
+      updated_at: now
+    }));
+
+    if (trips.length) {
+      const { error } = await supabaseClient
+        .from('trips')
+        .upsert(trips, { onConflict: 'id' });
+
+      if (error) throw error;
+    }
+
+    const maintenance = db.maint.map(m => ({
+      id: m.id,
+      vehicle_id: m.vehicleId,
+      type: m.type || '',
+      date: m.date || null,
+      km: m.km ?? null,
+      amount: m.amount ?? 0,
+      notes: m.notes || '',
+      attachment_path: m.attachmentPath || null,
+      attachment_name: m.attachmentName || null,
+      attachment_type: m.attachmentType || null,
+      data: m.data || {},
+      workspace_id: currentWorkspaceId,
+      created_at: m.createdAt || now,
+      updated_at: now
+    }));
+
+    if (maintenance.length) {
+      const { error } = await supabaseClient
+        .from('maintenance')
+        .upsert(maintenance, { onConflict: 'id' });
+
+      if (error) throw error;
+    }
+
+    console.log(
+      'ENRUTA: sincronización automática completada.',
+      {
+        vehicles: vehicles.length,
+        fuel: fuel.length,
+        trips: trips.length,
+        maintenance: maintenance.length
+      }
+    );
+
+  } catch (error) {
+    console.error(
+      'ENRUTA: error en sincronización automática:',
+      error
+    );
+
+    alert(
+      'ERROR EN SINCRONIZACIÓN\\n\\n' +
+      (error.message || String(error))
+    );
+  }
+}
+
+async function syncFromSupabase() {
+
+  if (!supabaseClient) {
+    throw new Error('Supabase no está disponible.');
+  }
+
+  if (!currentUser || !currentWorkspaceId) {
+    throw new Error('No hay usuario o espacio ENRUTA conectado.');
+  }
+
+  console.log('ENRUTA: descargando datos desde Supabase...');
+
+  const [
+    vehiclesResult,
+    fuelResult,
+    tripsResult,
+    maintenanceResult
+  ] = await Promise.all([
+
+    supabaseClient
+      .from('vehicles')
+      .select('*')
+      .eq('workspace_id', currentWorkspaceId),
+
+    supabaseClient
+      .from('fuel')
+      .select('*')
+      .eq('workspace_id', currentWorkspaceId),
+
+    supabaseClient
+      .from('trips')
+      .select('*')
+      .eq('workspace_id', currentWorkspaceId),
+
+    supabaseClient
+      .from('maintenance')
+      .select('*')
+      .eq('workspace_id', currentWorkspaceId)
+
+  ]);
+
+  if (vehiclesResult.error) {
+    throw new Error(
+      `Error descargando vehículos: ${vehiclesResult.error.message}`
+    );
+  }
+
+  if (fuelResult.error) {
+    throw new Error(
+      `Error descargando repostajes: ${fuelResult.error.message}`
+    );
+  }
+
+  if (tripsResult.error) {
+    throw new Error(
+      `Error descargando viajes: ${tripsResult.error.message}`
+    );
+  }
+
+  if (maintenanceResult.error) {
+    throw new Error(
+      `Error descargando mantenimiento: ${maintenanceResult.error.message}`
+    );
+  }
+
+  const vehicles =
+    (vehiclesResult.data || []).map(v => ({
+      id: v.id,
+      name: v.name || '',
+      brand: v.brand || '',
+      model: v.model || '',
+      plate: v.plate || '',
+      year: v.year ?? null,
+      consumption: v.consumption ?? null,
+      itvLast: v.itv_last || null,
+      itvNext: v.itv_next || null,
+      data: v.data || {},
+      createdAt: v.created_at || null,
+      updatedAt: v.updated_at || null
+    }));
+
+  const fuel =
+    (fuelResult.data || []).map(f => ({
+      id: f.id,
+      vehicleId: f.vehicle_id,
+      date: f.date || null,
+      km: f.km ?? null,
+      fuelType: f.fuel_type || 'diesel',
+      liters: f.liters ?? null,
+      price: f.price ?? null,
+      amount: f.amount ?? 0,
+      full: !!f.full_tank,
+      stationName: f.station_name || null,
+      stationAddress: f.station_address || null,
+      stationLat: f.station_lat ?? null,
+      stationLng: f.station_lng ?? null,
+      data: f.data || {},
+      createdAt: f.created_at || null,
+      updatedAt: f.updated_at || null
+    }));
+
+  const trips =
+    (tripsResult.data || []).map(t => ({
+      id: t.id,
+      vehicleId: t.vehicle_id,
+      date: t.date || null,
+      name: t.name || '',
+      destination: t.destination || '',
+      km: t.km ?? 0,
+      cost: t.cost ?? 0,
+      origin: t.data?.origin || '',
+      notes: t.data?.notes || '',
+      data: t.data || {},
+      createdAt: t.created_at || null,
+      updatedAt: t.updated_at || null
+    }));
+
+  const maint =
+    (maintenanceResult.data || []).map(m => ({
+      id: m.id,
+      vehicleId: m.vehicle_id,
+      type: m.type || '',
+      date: m.date || null,
+      km: m.km ?? null,
+      amount: m.amount ?? 0,
+      notes: m.notes || '',
+      attachmentPath: m.attachment_path || null,
+      attachmentName: m.attachment_name || null,
+      attachmentType: m.attachment_type || null,
+      data: m.data || {},
+      createdAt: m.created_at || null,
+      updatedAt: m.updated_at || null
+    }));
+
+  isSyncingFromSupabase = true;
+
+  db = {
+    vehicles,
+    fuel,
+    trips,
+    maint
+  };
+
+  save();
+
+  isSyncingFromSupabase = false;
+
+  console.log(
+    'ENRUTA: descarga completada.',
+    {
+      vehicles: vehicles.length,
+      fuel: fuel.length,
+      trips: trips.length,
+      maintenance: maint.length
+    }
+  );
+
+  alert(
+    'Sincronización automática\\n\\n' +
+    'Vehículos: ' + vehicles.length + '\\n' +
+    'Repostajes: ' + fuel.length + '\\n' +
+    'Viajes: ' + trips.length + '\\n' +
+    'Mantenimiento: ' + maint.length
+  );
+
+  return {
+    vehicles: vehicles.length,
+    fuel: fuel.length,
+    trips: trips.length,
+    maintenance: maint.length
+  };
+}
+
 function showLogin(message = '') {
 
   const app =
@@ -341,8 +656,34 @@ let db = JSON.parse(localStorage.getItem(K) || 'null') || {
    UTILIDADES
 ========================================================= */
 
+let syncUploadTimer = null;
+
+function scheduleSyncToSupabase() {
+  if (!supabaseClient || !currentUser || !currentWorkspaceId) {
+    return;
+  }
+
+  if (isSyncingFromSupabase) {
+    return;
+  }
+
+  clearTimeout(syncUploadTimer);
+
+  syncUploadTimer = setTimeout(() => {
+    syncToSupabase();
+  }, 1000);
+}
+
+
+let isSyncingFromSupabase = false;
+
+
 function save() {
   localStorage.setItem(K, JSON.stringify(db));
+
+  if (!isSyncingFromSupabase) {
+    scheduleSyncToSupabase();
+  }
 }
 
 
