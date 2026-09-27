@@ -6233,7 +6233,7 @@ function tripForm(id = null) {
    BORRAR VIAJE
 ========================================================= */
 
-function deleteTrip(id) {
+async function deleteTrip(id) {
 
   const trip =
     db.trips.find(
@@ -6259,19 +6259,64 @@ function deleteTrip(id) {
   }
 
 
-  db.trips =
-    db.trips.filter(
-      t => t.id !== id
+  try {
+
+    if (
+      supabaseClient &&
+      currentUser &&
+      currentWorkspaceId
+    ) {
+
+      const { error } = await supabaseClient
+        .from('trips')
+        .delete()
+        .eq('id', id)
+        .eq('workspace_id', currentWorkspaceId);
+
+      if (error) {
+
+        console.error(
+          'ENRUTA: error borrando viaje en Supabase:',
+          error
+        );
+
+        alert(
+          'ERROR BORRANDO VIAJE\\n\\n' +
+          (error.message || String(error))
+        );
+
+        return;
+      }
+    }
+
+
+    db.trips =
+      db.trips.filter(
+        t => t.id !== id
+      );
+
+
+    save();
+
+    toast(
+      'Viaje borrado'
     );
 
+    render('trips');
 
-  save();
 
-  toast(
-    'Viaje borrado'
-  );
+  } catch (error) {
 
-  render('trips');
+    console.error(
+      'ENRUTA: error en borrado de viaje:',
+      error
+    );
+
+    alert(
+      'ERROR BORRANDO VIAJE\\n\\n' +
+      (error.message || String(error))
+    );
+  }
 }
 
 
