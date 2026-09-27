@@ -4443,12 +4443,11 @@ function editVehicle(id) {
 }
 
 
-function delVehicle(id) {
+async function delVehicle(id) {
 
   const v = vehicle(id);
 
   if (!v) return;
-
 
   if (
     !confirm(
@@ -4458,18 +4457,59 @@ function delVehicle(id) {
     return;
   }
 
+  try {
 
-  db.vehicles =
-    db.vehicles.filter(
-      item => item.id !== id
+    if (
+      supabaseClient &&
+      currentUser &&
+      currentWorkspaceId
+    ) {
+
+      const { error } = await supabaseClient
+        .from('vehicles')
+        .delete()
+        .eq('id', id)
+        .eq('workspace_id', currentWorkspaceId);
+
+      if (error) {
+
+        console.error(
+          'ENRUTA: error archivando vehículo en Supabase:',
+          error
+        );
+
+        alert(
+          'ERROR ARCHIVANDO VEHÍCULO\n\n' +
+          (error.message || String(error))
+        );
+
+        return;
+      }
+    }
+
+    db.vehicles =
+      db.vehicles.filter(
+        item => item.id !== id
+      );
+
+    save();
+
+    toast('Vehículo archivado');
+
+    go('vehicles');
+
+  } catch (error) {
+
+    console.error(
+      'ENRUTA: error en archivado de vehículo:',
+      error
     );
 
-
-  save();
-
-  toast('Vehículo archivado');
-
-  go('vehicles');
+    alert(
+      'ERROR ARCHIVANDO VEHÍCULO\n\n' +
+      (error.message || String(error))
+    );
+  }
 }
 
 
