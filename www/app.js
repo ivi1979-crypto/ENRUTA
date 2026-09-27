@@ -5632,7 +5632,7 @@ function maintenanceForm(
 }
 
 
-function deleteMaintenance(id) {
+async function deleteMaintenance(id) {
 
   if (
     !confirm(
@@ -5642,33 +5642,72 @@ function deleteMaintenance(id) {
     return;
   }
 
+  try {
 
-  db.maint =
-    db.maint.filter(
-      m => m.id !== id
+    if (
+      supabaseClient &&
+      currentUser &&
+      currentWorkspaceId
+    ) {
+
+      const { error } = await supabaseClient
+        .from('maintenance')
+        .delete()
+        .eq('id', id)
+        .eq('workspace_id', currentWorkspaceId);
+
+      if (error) {
+        console.error(
+          'ENRUTA: error borrando mantenimiento en Supabase:',
+          error
+        );
+
+        alert(
+          'ERROR BORRANDO MANTENIMIENTO\\n\\n' +
+          (error.message || String(error))
+        );
+
+        return;
+      }
+    }
+
+    db.maint =
+      db.maint.filter(
+        m => m.id !== id
+      );
+
+    save();
+
+    toast(
+      'Mantenimiento borrado'
     );
 
-
-  save();
-
-  toast(
-    'Mantenimiento borrado'
-  );
-
-
-  if (
-    currentPage === 'vehicleDetail' &&
-    currentVehicleId
-  ) {
-
-    vehicleDetail(
+    if (
+      currentPage === 'vehicleDetail' &&
       currentVehicleId
+    ) {
+
+      vehicleDetail(
+        currentVehicleId
+      );
+
+    } else {
+
+      render('maintenance');
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      'ENRUTA: error en borrado de mantenimiento:',
+      error
     );
 
-  } else {
-
-    render('maintenance');
-
+    alert(
+      'ERROR BORRANDO MANTENIMIENTO\\n\\n' +
+      (error.message || String(error))
+    );
   }
 }
 
