@@ -155,7 +155,36 @@ async function initSupabaseAuth() {
   );
 
 
+  try {
+    await syncFromSupabase();
+  } catch (error) {
+    console.error(
+      'ENRUTA: error en sincronización automática:',
+      error
+    );
+  }
+
+
   render('home');
+}
+
+
+let syncUploadTimer = null;
+
+function scheduleSyncToSupabase() {
+  if (!supabaseClient || !currentUser || !currentWorkspaceId) {
+    return;
+  }
+
+  if (isSyncingFromSupabase) {
+    return;
+  }
+
+  clearTimeout(syncUploadTimer);
+
+  syncUploadTimer = setTimeout(() => {
+    syncToSupabase();
+  }, 1000);
 }
 
 
@@ -300,6 +329,7 @@ async function syncToSupabase() {
     );
   }
 }
+
 
 async function syncFromSupabase() {
 
@@ -473,6 +503,7 @@ async function syncFromSupabase() {
     maintenance: maint.length
   };
 }
+
 
 function showLogin(message = '') {
 
@@ -656,27 +687,7 @@ let db = JSON.parse(localStorage.getItem(K) || 'null') || {
    UTILIDADES
 ========================================================= */
 
-let syncUploadTimer = null;
-
-function scheduleSyncToSupabase() {
-  if (!supabaseClient || !currentUser || !currentWorkspaceId) {
-    return;
-  }
-
-  if (isSyncingFromSupabase) {
-    return;
-  }
-
-  clearTimeout(syncUploadTimer);
-
-  syncUploadTimer = setTimeout(() => {
-    syncToSupabase();
-  }, 1000);
-}
-
-
 let isSyncingFromSupabase = false;
-
 
 function save() {
   localStorage.setItem(K, JSON.stringify(db));
@@ -685,8 +696,565 @@ function save() {
     scheduleSyncToSupabase();
   }
 }
+/* =========================================================
+   SINCRONIZACIÓN INICIAL CON SUPABASE
+   Solo SUBE los datos locales.
+   No descarga ni borra nada.
+========================================================= */
+
+async function initialSyncToSupabase() {
+
+  if (!supabaseClient) {
+    throw new Error(
+      'Supabase no está disponible.'
+    );
+  }
+
+  if (!currentUser || !currentWorkspaceId) {
+    throw new Error(
+      'No hay usuario o espacio ENRUTA conectado.'
+    );
+  }
 
 
+  console.log(
+    'ENRUTA: iniciando sincronización inicial...'
+  );
+
+
+  /* -------------------------------------------------------
+     1. COPIA DE SEGURIDAD LOCAL
+  ------------------------------------------------------- */
+
+  const backupKey =
+    `enruta04-backup-${Date.now()}`;
+
+  localStorage.setItem(
+    backupKey,
+    JSON.stringify(db)
+  );
+
+
+  console.log(
+    'ENRUTA: copia local creada:',
+    backupKey
+  );
+
+
+  /* -------------------------------------------------------
+     2. COMPROBAR QUE SUPABASE ESTÁ VACÍO
+  ------------------------------------------------------- */
+
+  const tables = [
+    'vehicles',
+    'fuel',
+    'trips',
+    'maintenance'
+  ];
+
+
+  for (const table of tables) {
+
+    const {
+      count,
+      error
+    } = await supabaseClient
+      .from(table)
+      .select('id', {
+        count: 'exact',
+        head: true
+      })
+      .eq(
+        'workspace_id',
+        currentWorkspaceId
+      );
+
+
+    if (error) {
+
+      console.error(
+        `Error comprobando ${table}:`,
+        error
+      );
+
+      throw new Error(
+        `No se puede comprobar la tabla ${table}.`
+      );
+    }
+
+
+    if (Number(count || 0) > 0) {
+
+      throw new Error(
+        `La tabla ${table} ya contiene datos. ` +
+        `La sincronización inicial se ha detenido ` +
+        `para evitar sobrescribir información.`
+      );
+    }
+
+  }
+
+
+  console.log(
+    'ENRUTA: Supabase está vacío para este espacio.'
+  );
+
+
+  /* -------------------------------------------------------
+     3. VEHÍCULOS
+  ------------------------------------------------------- */
+
+  const vehicles =
+    db.vehicles.map(v => ({
+
+      id:
+        v.id,
+
+      name:
+        v.name || '',
+
+      brand:
+        v.brand || '',
+
+      model:
+        v.model || '',
+
+      plate:
+        v.plate || '',
+
+      year:
+        v.year
+          ? Number(v.year)
+          : null,
+
+      consumption:
+        v.consumption
+          ? Number(v.consumption)
+          : null,
+
+      itv_last:
+        v.itvLast || null,
+
+      itv_next:
+        v.itvNext || null,
+
+      data:
+        v.data || {},
+
+      workspace_id:
+        currentWorkspaceId,
+
+      created_at:
+        v.createdAt
+          ? new Date(v.createdAt).toISOString()
+          : new Date().toISOString(),
+
+      updated_at:
+        new Date().toISOString()
+
+    }));
+
+
+  if (vehicles.length) {
+
+    const {
+      error
+    } = await supabaseClient
+      .from('vehicles')
+      .insert(vehicles);
+
+
+    if (error) {
+
+      console.error(
+        'Error subiendo vehículos:',
+        error
+      );
+
+      throw new Error(
+        `Error subiendo vehículos: ${error.message}`
+      );
+    }
+
+  }
+
+
+  console.log(
+    `ENRUTA: ${vehicles.length} vehículos subidos.`
+  );
+
+
+  /* -------------------------------------------------------
+     4. REPOSTAJES
+  ------------------------------------------------------- */
+
+  const fuel =
+    db.fuel.map(f => ({
+
+      id:
+        f.id,
+
+      vehicle_id:
+        f.vehicleId,
+
+      date:
+        f.date || null,
+
+      km:
+        f.km
+          ? Number(f.km)
+          : null,
+
+      fuel_type:
+        f.fuelType || 'diesel',
+
+      liters:
+        f.liters
+          ? Number(f.liters)
+          : null,
+
+      price:
+        f.price
+          ? Number(f.price)
+          : null,
+
+      amount:
+        f.amount
+          ? Number(f.amount)
+          : 0,
+
+      full_tank:
+        !!f.full,
+
+      station_name:
+        f.stationName || null,
+
+      station_address:
+        f.stationAddress || null,
+
+      station_lat:
+        f.stationLat
+          ? Number(f.stationLat)
+          : null,
+
+      station_lng:
+        f.stationLng
+          ? Number(f.stationLng)
+          : null,
+
+      data:
+        f.data || {},
+
+      workspace_id:
+        currentWorkspaceId,
+
+      created_at:
+        f.createdAt
+          ? new Date(f.createdAt).toISOString()
+          : new Date().toISOString(),
+
+      updated_at:
+        new Date().toISOString()
+
+    }));
+
+
+  if (fuel.length) {
+
+    const {
+      error
+    } = await supabaseClient
+      .from('fuel')
+      .insert(fuel);
+
+
+    if (error) {
+
+      console.error(
+        'Error subiendo repostajes:',
+        error
+      );
+
+      throw new Error(
+        `Error subiendo repostajes: ${error.message}`
+      );
+    }
+
+  }
+
+
+  console.log(
+    `ENRUTA: ${fuel.length} repostajes subidos.`
+  );
+
+
+  /* -------------------------------------------------------
+     5. VIAJES
+  ------------------------------------------------------- */
+
+  const trips =
+    db.trips.map(t => ({
+
+      id:
+        t.id,
+
+      vehicle_id:
+        t.vehicleId,
+
+      date:
+        t.date || null,
+
+      name:
+        t.name || '',
+
+      destination:
+        t.destination || '',
+
+      km:
+        t.km
+          ? Number(t.km)
+          : 0,
+
+      cost:
+        t.cost
+          ? Number(t.cost)
+          : 0,
+
+      data:
+        {
+          ...(t.data || {}),
+
+          origin:
+            t.origin || '',
+
+          notes:
+            t.notes || ''
+
+        },
+
+      workspace_id:
+        currentWorkspaceId,
+
+      created_at:
+        t.createdAt
+          ? new Date(t.createdAt).toISOString()
+          : new Date().toISOString(),
+
+      updated_at:
+        new Date().toISOString()
+
+    }));
+
+
+  if (trips.length) {
+
+    const {
+      error
+    } = await supabaseClient
+      .from('trips')
+      .insert(trips);
+
+
+    if (error) {
+
+      console.error(
+        'Error subiendo viajes:',
+        error
+      );
+
+      throw new Error(
+        `Error subiendo viajes: ${error.message}`
+      );
+    }
+
+  }
+
+
+  console.log(
+    `ENRUTA: ${trips.length} viajes subidos.`
+  );
+
+
+  /* -------------------------------------------------------
+     6. MANTENIMIENTO
+  ------------------------------------------------------- */
+
+  const maintenance =
+    db.maint.map(m => ({
+
+      id:
+        m.id,
+
+      vehicle_id:
+        m.vehicleId,
+
+      type:
+        m.type || '',
+
+      date:
+        m.date || null,
+
+      km:
+        m.km
+          ? Number(m.km)
+          : null,
+
+      amount:
+        m.amount
+          ? Number(m.amount)
+          : 0,
+
+      notes:
+        m.notes || '',
+
+      attachment_path:
+        m.attachmentPath || null,
+
+      attachment_name:
+        m.attachmentName || null,
+
+      attachment_type:
+        m.attachmentType || null,
+
+      data:
+        m.data || {},
+
+      workspace_id:
+        currentWorkspaceId,
+
+      created_at:
+        m.createdAt
+          ? new Date(m.createdAt).toISOString()
+          : new Date().toISOString(),
+
+      updated_at:
+        new Date().toISOString()
+
+    }));
+
+
+  if (maintenance.length) {
+
+    const {
+      error
+    } = await supabaseClient
+      .from('maintenance')
+      .insert(maintenance);
+
+
+    if (error) {
+
+      console.error(
+        'Error subiendo mantenimiento:',
+        error
+      );
+
+      throw new Error(
+        `Error subiendo mantenimiento: ${error.message}`
+      );
+    }
+
+  }
+
+
+  console.log(
+    `ENRUTA: ${maintenance.length} mantenimientos subidos.`
+  );
+
+
+  /* -------------------------------------------------------
+     7. RESULTADO
+  ------------------------------------------------------- */
+
+  const total =
+    vehicles.length +
+    fuel.length +
+    trips.length +
+    maintenance.length;
+
+
+  console.log(
+    'ENRUTA: sincronización inicial completada.',
+    {
+      vehicles: vehicles.length,
+      fuel: fuel.length,
+      trips: trips.length,
+      maintenance: maintenance.length,
+      total
+    }
+  );
+
+
+  return {
+    vehicles: vehicles.length,
+    fuel: fuel.length,
+    trips: trips.length,
+    maintenance: maintenance.length,
+    total,
+    backupKey
+  };
+
+}
+
+async function runInitialSync() {
+  try {
+    if (!currentUser || !currentWorkspaceId) {
+      alert(
+        'No hay sesión iniciada o no se ha encontrado el espacio de trabajo.'
+      );
+      return;
+    }
+
+    const counts = {
+      vehicles: db.vehicles.length,
+      fuel: db.fuel.length,
+      trips: db.trips.length,
+      maintenance: db.maint.length
+    };
+
+    const total =
+      counts.vehicles +
+      counts.fuel +
+      counts.trips +
+      counts.maintenance;
+
+    if (!total) {
+      alert('No hay datos locales para sincronizar.');
+      return;
+    }
+
+    const message =
+      'Se van a subir a ENRUTA Familia:\n\n' +
+      `Vehículos: ${counts.vehicles}\n` +
+      `Repostajes: ${counts.fuel}\n` +
+      `Viajes: ${counts.trips}\n` +
+      `Mantenimientos: ${counts.maintenance}\n\n` +
+      '¿Continuar?';
+
+    if (!confirm(message)) return;
+
+    const result = await initialSyncToSupabase();
+
+    alert(
+      'Sincronización completada correctamente.\n\n' +
+      `Vehículos: ${result.vehicles}\n` +
+      `Repostajes: ${result.fuel}\n` +
+      `Viajes: ${result.trips}\n` +
+      `Mantenimientos: ${result.maintenance}`
+    );
+
+  } catch (error) {
+    console.error(
+      'Error en sincronización inicial:',
+      error
+    );
+
+    alert(
+      '❌ Error durante la sincronización:\n\n' +
+      (error?.message || error)
+    );
+  }
+}
 function uid(prefix = 'id') {
   return prefix + Date.now() + Math.random().toString(36).slice(2, 7);
 }
@@ -1158,7 +1726,111 @@ function fuelStatsCard(vehicleId = null) {
   `;
 }
 
+/* =========================================================
+   DESGLOSE DE GASTOS POR FECHA
+========================================================= */
 
+function expenseBreakdownCard(
+  title,
+  items,
+  amountFn,
+  icon = '💰'
+) {
+
+  const list =
+    [...items]
+      .filter(item => item.date)
+      .sort((a, b) =>
+        String(b.date || '')
+          .localeCompare(
+            String(a.date || '')
+          )
+      );
+
+  const total =
+    list.reduce(
+      (sum, item) =>
+        sum + Number(amountFn(item) || 0),
+      0
+    );
+
+  return `
+
+    <div class="card">
+
+      <h3>
+        ${icon} ${title}
+      </h3>
+
+      ${
+        list.length
+
+          ? `
+
+            <div class="list-row">
+
+              <strong>
+                Total
+              </strong>
+
+              <strong>
+                ${eur(total)}
+              </strong>
+
+            </div>
+
+
+            ${list.map(item => `
+
+              <div class="list-row">
+
+                <div>
+
+                  <strong>
+                    ${formatDateES(item.date)}
+                  </strong>
+
+                  <small>
+                    ${
+                      item.type
+                        ? escapeHtml(item.type)
+                        : item.stationName
+                          ? escapeHtml(item.stationName)
+                          : ''
+                    }
+
+                    ${
+                      item.km
+                        ? ` · ${Number(item.km).toLocaleString('es-ES')} km`
+                        : ''
+                    }
+                  </small>
+
+                </div>
+
+                <strong>
+                  ${eur(amountFn(item))}
+                </strong>
+
+              </div>
+
+            `).join('')}
+
+          `
+
+          : `
+
+            <p class="muted">
+              No hay gastos registrados.
+            </p>
+
+          `
+      }
+
+    </div>
+
+  `;
+}
 function fuelPriceEvolution(vehicleId = null) {
 
   const list =
@@ -2061,7 +2733,7 @@ function selectFuelStation(index) {
 }
 
 
-function updateFuelAmount() {
+function updateFuelAmount(changedField = '') {
 
   const form =
     document.getElementById(
@@ -2072,27 +2744,77 @@ function updateFuelAmount() {
 
 
   const liters =
-    Number(
-      form.elements.liters?.value || 0
-    );
+    form.elements.liters;
 
   const price =
-    Number(
-      form.elements.price?.value || 0
-    );
+    form.elements.price;
 
   const amount =
     form.elements.amount;
 
 
+  const l =
+    Number(liters?.value || 0);
+
+  const p =
+    Number(price?.value || 0);
+
+  const a =
+    Number(amount?.value || 0);
+
+
+  if (p <= 0) return;
+
+
   if (
-    amount &&
-    liters > 0 &&
-    price > 0
+    changedField === 'amount' &&
+    a > 0
   ) {
 
-    amount.value =
-      (liters * price).toFixed(2);
+    if (liters) {
+      liters.value =
+        (a / p).toFixed(2);
+    }
+
+    return;
+
+  }
+
+
+  if (
+    changedField === 'liters' &&
+    l > 0
+  ) {
+
+    if (amount) {
+      amount.value =
+        (l * p).toFixed(2);
+    }
+
+    return;
+
+  }
+
+
+  if (
+    changedField === 'price'
+  ) {
+
+    if (a > 0) {
+
+      if (liters) {
+        liters.value =
+          (a / p).toFixed(2);
+      }
+
+    } else if (l > 0) {
+
+      if (amount) {
+        amount.value =
+          (l * p).toFixed(2);
+      }
+
+    }
 
   }
 
@@ -3009,6 +3731,20 @@ function vehicleDetail(id) {
         ${fuelStatsCard(id)}
 
         ${fuelPriceEvolution(id)}
+        ${expenseBreakdownCard(
+  'Gastos de carburante por fecha',
+  fuel,
+  f => fuelAmount(f),
+  '⛽'
+)}
+
+${expenseBreakdownCard(
+  'Gastos de mantenimiento por fecha',
+  maint,
+  m => Number(m.amount || 0),
+  '🔧'
+)}
+
 
 
         <div class="card">
@@ -3637,12 +4373,14 @@ function vehicleForm(record = null) {
             fd.get('plate').trim(),
 
           year:
-            fd.get('year'),
+            fd.get('year')
+              ? Number(fd.get('year'))
+              : null,
 
           consumption:
-            Number(
-              fd.get('consumption') || 0
-            ),
+            fd.get('consumption')
+              ? Number(fd.get('consumption'))
+              : null,
 
           itvLast,
           itvNext
@@ -4143,7 +4881,7 @@ function fuelForm(id = null) {
             min="0"
             step="0.01"
             value="${escapeAttr(fuelLiters(f) || '')}"
-            required
+            
           >
 
         </label>
@@ -4237,10 +4975,11 @@ function fuelForm(id = null) {
 
       if (
         event.target.name === 'liters' ||
-        event.target.name === 'price'
+        event.target.name === 'price' ||
+        event.target.name === 'amount'
       ) {
 
-        updateFuelAmount();
+        updateFuelAmount(event.target.name);
 
       }
 
@@ -4333,13 +5072,13 @@ function fuelForm(id = null) {
           fd.get('stationAddress') || '',
 
         stationLat:
-          selectedFuelStation?.lat ??
-          record?.stationLat ??
+          selectedFuelStation?.lat ||
+          record?.stationLat ||
           '',
 
         stationLng:
-          selectedFuelStation?.lng ??
-          record?.stationLng ??
+          selectedFuelStation?.lng ||
+          record?.stationLng ||
           ''
 
       };
@@ -5516,8 +6255,6 @@ function fullScreenForm(content) {
     card.scrollTop = 0;
   }
 }
-
-
 /* =========================================================
    MÁS
 ========================================================= */
@@ -5529,7 +6266,6 @@ function more() {
     `
 
       <div class="stack">
-
 
         <div class="card">
 
@@ -5598,11 +6334,55 @@ function more() {
 
         </div>
 
+                <div class="card">
+
+          <h3>
+            ☁️ Sincronización
+          </h3>
+
+          <p class="muted">
+            Sube los datos actuales de este dispositivo
+            a ENRUTA Familia.
+          </p>
+
+          <div class="actions">
+
+            <button
+              type="button"
+              onclick="runInitialSync()"
+            >
+              ☁️ Sincronizar datos
+            </button>
+
+          </div>
+
+        </div>
 
         <div class="card">
 
           <h3>
             Datos de ENRUTA
+            
+  </h3>
+
+  <p class="muted">
+    Sube los datos actuales de este dispositivo
+    a ENRUTA Familia.
+  </p>
+
+  <div class="actions">
+
+    <button
+      type="button"
+      onclick="runInitialSync()"
+    >
+      ☁️ Sincronizar datos
+    </button>
+
+  </div>
+
+</div>
+
           </h3>
 
 
