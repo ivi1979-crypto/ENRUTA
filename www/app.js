@@ -5127,7 +5127,7 @@ function fuelForm(id = null) {
 }
 
 
-function deleteFuel(id) {
+async function deleteFuel(id) {
 
   if (
     !confirm(
@@ -5137,20 +5137,60 @@ function deleteFuel(id) {
     return;
   }
 
+  try {
 
-  db.fuel =
-    db.fuel.filter(
-      f => f.id !== id
+    if (
+      supabaseClient &&
+      currentUser &&
+      currentWorkspaceId
+    ) {
+
+      const { error } = await supabaseClient
+        .from('fuel')
+        .delete()
+        .eq('id', id)
+        .eq('workspace_id', currentWorkspaceId);
+
+      if (error) {
+        console.error(
+          'ENRUTA: error borrando repostaje en Supabase:',
+          error
+        );
+
+        alert(
+          'ERROR BORRANDO REPOSTAJE\\n\\n' +
+          (error.message || String(error))
+        );
+
+        return;
+      }
+    }
+
+    db.fuel =
+      db.fuel.filter(
+        f => f.id !== id
+      );
+
+    save();
+
+    toast(
+      'Repostaje borrado'
     );
 
+    render('fuel');
 
-  save();
+  } catch (error) {
 
-  toast(
-    'Repostaje borrado'
-  );
+    console.error(
+      'ENRUTA: error en borrado de repostaje:',
+      error
+    );
 
-  render('fuel');
+    alert(
+      'ERROR BORRANDO REPOSTAJE\\n\\n' +
+      (error.message || String(error))
+    );
+  }
 }
 
 
