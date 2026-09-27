@@ -240,8 +240,8 @@ async function syncToSupabase() {
       full_tank: !!f.full,
       station_name: f.stationName || null,
       station_address: f.stationAddress || null,
-      station_lat: f.stationLat ?? null,
-      station_lng: f.stationLng ?? null,
+      station_lat: f.stationLat === '' || f.stationLat == null ? null : Number(f.stationLat),
+      station_lng: f.stationLng === '' || f.stationLng == null ? null : Number(f.stationLng),
       data: f.data || {},
       workspace_id: currentWorkspaceId,
       created_at: f.createdAt || now,
@@ -249,6 +249,8 @@ async function syncToSupabase() {
     }));
 
     if (fuel.length) {
+      console.log('ENRUTA DEBUG FUEL:', JSON.stringify(fuel, null, 2));
+
       const { error } = await supabaseClient
         .from('fuel')
         .upsert(fuel, { onConflict: 'id' });
@@ -5072,14 +5074,14 @@ function fuelForm(id = null) {
           fd.get('stationAddress') || '',
 
         stationLat:
-          selectedFuelStation?.lat ||
-          record?.stationLat ||
-          '',
+          selectedFuelStation?.lat ??
+          record?.stationLat ??
+          null,
 
         stationLng:
-          selectedFuelStation?.lng ||
-          record?.stationLng ||
-          ''
+          selectedFuelStation?.lng ??
+          record?.stationLng ??
+          null
 
       };
 
