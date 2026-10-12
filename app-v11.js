@@ -193,7 +193,6 @@ async function syncToSupabase() {
     return;
   }
 
-  alert('ENRUTA: iniciando subida a Supabase');
 
   const now = new Date().toISOString();
 
@@ -268,8 +267,11 @@ async function syncToSupabase() {
       cost: t.cost ?? 0,
       data: {
         ...(t.data || {}),
-        origin: t.origin || '',
-        notes: t.notes || ''
+        origin: t.origin || t.data?.origin || '',
+        notes: t.notes || t.data?.notes || '',
+        startKm: t.data?.startKm ?? null,
+        endKm: t.data?.endKm ?? null,
+        expenses: Array.isArray(t.data?.expenses) ? t.data.expenses : []
       },
       workspace_id: currentWorkspaceId,
       created_at: t.createdAt || now,
@@ -445,6 +447,7 @@ async function syncFromSupabase() {
       cost: t.cost ?? 0,
       origin: t.data?.origin || '',
       notes: t.data?.notes || '',
+      data: t.data || {},
       data: t.data || {},
       createdAt: t.created_at || null,
       updatedAt: t.updated_at || null
@@ -1027,10 +1030,19 @@ async function initialSyncToSupabase() {
           ...(t.data || {}),
 
           origin:
-            t.origin || '',
+            t.origin || t.data?.origin || '',
 
           notes:
-            t.notes || ''
+            t.notes || t.data?.notes || '',
+
+          startKm:
+            t.data?.startKm ?? null,
+
+          endKm:
+            t.data?.endKm ?? null,
+
+          expenses:
+            Array.isArray(t.data?.expenses) ? t.data.expenses : []
 
         },
 
@@ -1497,43 +1509,37 @@ function avg(values) {
 
 
 function learnedConsumption(vehicleId) {
-
+  // Consumo real: sumar TODOS los litros repostados entre dos llenados completos.
   const list = db.fuel
-    .filter(f =>
-      f.vehicleId === vehicleId &&
-      f.full &&
-      Number.isFinite(Number(f.km))
-    )
-    .sort((a, b) =>
-      Number(a.km) - Number(b.km)
-    );
-
-  if (list.length < 2) return null;
-
-  const consumptions = [];
-
-  for (let i = 1; i < list.length; i++) {
-
-    const previous = list[i - 1];
-    const current = list[i];
-
-    const km =
-      Number(current.km) -
-      Number(previous.km);
-
-    const liters =
-      fuelLiters(current);
-
-    if (km > 0 && liters > 0) {
-      consumptions.push(
-        liters * 100 / km
-      );
-    }
+    .filter(f => f.vehicleId === vehicleId && Number.isFinite(Number(f.km)) && Number(f.km) >= 0)
+    .sort((a, b) => Number(a.km) - Number(b.km) || String(a.date || '').localeCompare(String(b.date || '')));
+  const fulls = list.filter(f => f.full);
+  const values = [];
+  for (let i = 1; i < fulls.length; i++) {
+    const previous = fulls[i - 1], current = fulls[i];
+    const km = Number(current.km) - Number(previous.km);
+    const liters = list
+      .filter(f => Number(f.km) > Number(previous.km) && Number(f.km) <= Number(current.km))
+      .reduce((sum, f) => sum + fuelLiters(f), 0);
+    if (km > 0 && liters > 0) values.push(liters * 100 / km);
   }
+  return values.length ? avg(values) : null;
+}
 
-  if (!consumptions.length) return null;
-
-  return avg(consumptions);
+function provisionalConsumption(vehicleId) {
+  // Estimación orientativa desde el último llenado completo; no se presenta como consumo real.
+  const list = db.fuel
+    .filter(f => f.vehicleId === vehicleId && Number.isFinite(Number(f.km)) && Number(f.km) >= 0)
+    .sort((a, b) => Number(a.km) - Number(b.km) || String(a.date || '').localeCompare(String(b.date || '')));
+  const fulls = list.filter(f => f.full);
+  if (!fulls.length) return null;
+  const anchor = fulls[fulls.length - 1];
+  const later = list.filter(f => Number(f.km) > Number(anchor.km));
+  if (!later.length) return null;
+  const last = later[later.length - 1];
+  const km = Number(last.km) - Number(anchor.km);
+  const liters = later.reduce((sum, f) => sum + fuelLiters(f), 0);
+  return km > 0 && liters > 0 ? liters * 100 / km : null;
 }
 
 
@@ -1605,6 +1611,10 @@ function fuelStatsCard(vehicleId = null) {
     vehicleId
       ? learnedConsumption(vehicleId)
       : null;
+  const provisional =
+    vehicleId
+      ? provisionalConsumption(vehicleId)
+      : null;
 
   const years =
     Object.keys(stats.years)
@@ -1669,16 +1679,11 @@ function fuelStatsCard(vehicleId = null) {
         </div>
 
         ${
-          consumption
-            ? `
-              <div>
-                <span>Consumo calculado</span>
-                <strong>
-                  ${consumption.toFixed(2)} L/100 km
-                </strong>
-              </div>
-            `
-            : ''
+          consumption !== null
+            ? `<div><span>Consumo real</span><strong>${consumption.toFixed(2)} L/100 km</strong></div>`
+            : provisional !== null
+              ? `<div><span>Consumo provisional</span><strong>${provisional.toFixed(2)} L/100 km</strong></div>`
+              : `<div><span>Consumo</span><strong>Pendiente de datos suficientes</strong></div>`
         }
 
       </div>
@@ -2987,6 +2992,8 @@ function home() {
 
                   const consumption =
                     learnedConsumption(v.id);
+                  const provisional =
+                    provisionalConsumption(v.id);
 
                   return `
 
@@ -3079,6 +3086,8 @@ function vehicles() {
 
                   const consumption =
                     learnedConsumption(v.id);
+                  const provisional =
+                    provisionalConsumption(v.id);
 
                   const itv =
                     itvInfo(v);
@@ -3132,17 +3141,11 @@ function vehicles() {
 
 
                       ${
-                        consumption
-                          ? `
-                            <p>
-                              Consumo:
-                              <strong>
-                                ${consumption.toFixed(2)}
-                                L/100 km
-                              </strong>
-                            </p>
-                          `
-                          : ''
+                        consumption !== null
+                          ? `<p>Consumo real: <strong>${consumption.toFixed(2)} L/100 km</strong></p>`
+                          : provisional !== null
+                            ? `<p>Consumo provisional: <strong>${provisional.toFixed(2)} L/100 km</strong></p>`
+                            : `<p class="muted">Consumo pendiente de datos suficientes</p>`
                       }
 
 
@@ -5756,522 +5759,135 @@ async function deleteMaintenance(id) {
    VIAJES
 ========================================================= */
 
-function tripsPage() {
-
-  const list =
-    [...db.trips]
-      .sort((a, b) =>
-        String(b.date || '')
-          .localeCompare(
-            String(a.date || '')
-          )
-      );
-
-
-  return pageLayout(
-    'Viajes',
-    `
-
-      <div class="page-actions">
-
-        <button
-          class="primary"
-          type="button"
-          onclick="tripForm()"
-        >
-          + Nuevo viaje
-        </button>
-
-      </div>
-
-
-      <div class="stack">
-
-        ${
-          list.length
-
-            ? list
-                .map(t => {
-
-                  const v =
-                    vehicle(t.vehicleId);
-
-
-                  return `
-
-                    <article class="card">
-
-                      <div class="list-row">
-
-                        <div>
-
-                          <h3>
-                            ${escapeHtml(
-                              t.name ||
-                              t.destination ||
-                              'Viaje'
-                            )}
-                          </h3>
-
-                          <small>
-                            ${escapeHtml(
-                              v?.name ||
-                              'Vehículo'
-                            )}
-                          </small>
-
-                          <small>
-                            ${t.date || ''}
-                          </small>
-
-
-                          ${
-                            t.origin ||
-                            t.destination
-                              ? `
-                                <small>
-
-                                  ${
-                                    t.origin
-                                      ? escapeHtml(t.origin)
-                                      : ''
-                                  }
-
-                                  ${
-                                    t.origin &&
-                                    t.destination
-                                      ? ' → '
-                                      : ''
-                                  }
-
-                                  ${
-                                    t.destination
-                                      ? escapeHtml(t.destination)
-                                      : ''
-                                  }
-
-                                </small>
-                              `
-                              : ''
-                          }
-
-
-                          ${
-                            t.km
-                              ? `
-                                <small>
-                                  ${Number(t.km).toLocaleString('es-ES')}
-                                  km
-                                </small>
-                              `
-                              : ''
-                          }
-
-                        </div>
-
-
-                        <strong>
-                          ${eur(t.cost)}
-                        </strong>
-
-                      </div>
-
-
-                      <div class="actions">
-
-                        <button
-                          type="button"
-                          onclick="tripForm('${t.id}')"
-                        >
-                          ✏️ Editar
-                        </button>
-
-
-                        <button
-                          class="danger"
-                          type="button"
-                          onclick="deleteTrip('${t.id}')"
-                        >
-                          🗑️ Borrar
-                        </button>
-
-                      </div>
-
-                    </article>
-
-                  `;
-
-                })
-                .join('')
-
-            : `
-
-              <div class="card empty">
-
-                <h3>
-                  No hay viajes
-                </h3>
-
-                <p>
-                  Añade tu primer viaje para empezar.
-                </p>
-
-              </div>
-
-            `
-        }
-
-      </div>
-
-    `
-  );
+function tripExpenses(trip) {
+  const expenses = trip?.data?.expenses;
+  if (Array.isArray(expenses)) return expenses;
+  // Compatibilidad con viajes antiguos: no perder el coste guardado.
+  const oldCost = Number(trip?.cost || 0);
+  return oldCost > 0 ? [{ id: 'legacy-' + trip.id, category: 'Gastos anteriores', concept: 'Coste registrado antes de la actualización', amount: oldCost, date: trip.date || '', notes: '' }] : [];
 }
 
+function tripTotal(trip) {
+  return tripExpenses(trip).reduce((sum, e) => sum + Math.max(0, Number(e.amount) || 0), 0);
+}
 
-/* =========================================================
-   FORMULARIO VIAJE
-========================================================= */
+function tripKm(trip) {
+  const start = Number(trip?.data?.startKm);
+  const end = Number(trip?.data?.endKm);
+  return Number.isFinite(start) && Number.isFinite(end) && end >= start && end > 0 ? end - start : Number(trip?.km || 0);
+}
+
+function tripsPage() {
+  const list = [...db.trips].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  return pageLayout('Viajes', `
+    <div class="page-actions"><button class="primary" type="button" onclick="tripForm()">+ Nuevo viaje</button></div>
+    <div class="stack">
+      ${list.length ? list.map(t => {
+        const expenses = tripExpenses(t);
+        const groups = {};
+        expenses.forEach(e => { const c = (e.category || 'Otros').trim() || 'Otros'; groups[c] = (groups[c] || 0) + (Number(e.amount) || 0); });
+        const km = tripKm(t);
+        return `<article class="card">
+          <div class="list-row"><div>
+            <h3>${escapeHtml(t.name || t.destination || 'Viaje')}</h3>
+            <small>${escapeHtml(t.date || '')}${t.vehicleId && vehicle(t.vehicleId) ? ' · ' + escapeHtml(vehicle(t.vehicleId).name || 'Vehículo') : ''}</small>
+            <p><strong>${km ? km.toLocaleString('es-ES') + ' km' : 'Kilómetros pendientes'}</strong></p>
+          </div><strong>${eur(tripTotal(t))}</strong></div>
+          ${Object.keys(groups).length ? `<div class="stack">${Object.entries(groups).map(([cat, amount]) => `<div class="list-row"><small>${escapeHtml(cat)}</small><small>${eur(amount)}</small></div>`).join('')}</div>` : '<p class="muted">Todavía no hay gastos.</p>'}
+          ${t.notes ? `<p class="muted">${escapeHtml(t.notes)}</p>` : ''}
+          <div class="actions"><button type="button" onclick="tripForm('${t.id}')">✏️ Editar</button><button class="danger" type="button" onclick="deleteTrip('${t.id}')">🗑️ Borrar</button></div>
+        </article>`;
+      }).join('') : `<div class="card empty"><h3>No hay viajes</h3><p>Añade tu primer viaje para empezar.</p></div>`}
+    </div>`);
+}
 
 function tripForm(id = null) {
-
   const editing = !!id;
-
-
-  const record =
-    editing
-      ? db.trips.find(t => t.id === id)
-      : null;
-
-
-  if (
-    editing &&
-    !record
-  ) {
-
-    toast(
-      'No se encontró el viaje'
-    );
-
-    return;
-
-  }
-
-
-  const t =
-    record || {
-
-      date:
-        today(),
-
-      km:
-        0,
-
-      cost:
-        0
-
-    };
-
-
-  fullScreenForm(`
-
-    <div class="form-page">
-
-      <div class="form-page-head">
-
-        <button
-          type="button"
-          class="ghost form-back"
-          onclick="closeModal()"
-        >
-          ← Volver
-        </button>
-
-
-        <div>
-
-          <h1>
-            ${
-              editing
-                ? 'Editar viaje'
-                : 'Nuevo viaje'
-            }
-          </h1>
-
-          <p class="muted">
-            ${
-              editing
-                ? 'Modifica los datos del viaje'
-                : 'Registra un nuevo viaje'
-            }
-          </p>
-
-        </div>
-
+  const record = editing ? db.trips.find(t => t.id === id) : null;
+  if (editing && !record) { toast('No se encontró el viaje'); return; }
+  const t = record || { id: '', date: today(), name: '', vehicleId: db.vehicles[0]?.id || '', notes: '', data: {} };
+  const data = t.data || {};
+  const startKm = data.startKm ?? '';
+  const endKm = data.endKm ?? '';
+  const expenses = tripExpenses(t).map(e => ({...e}));
+  if (!expenses.length) expenses.push({ id: uid('exp_'), category: 'Carburante', concept: '', amount: '', date: today(), notes: '' });
+  const expenseRow = (e, i) => `<div class="card trip-expense-row" data-expense-index="${i}" style="margin:0 0 12px">
+    <div class="list-row"><strong>Gasto ${i + 1}</strong><button type="button" class="danger" onclick="removeTripExpense(${i})">Quitar</button></div>
+    <label>Categoría (puedes escribir la tuya)<input name="expenseCategory" data-i="${i}" value="${escapeAttr(e.category || '')}" placeholder="Comida, carburante, entradas..."></label>
+    <label>Concepto<input name="expenseConcept" data-i="${i}" value="${escapeAttr(e.concept || '')}" placeholder="Ej. supermercado, peaje, museo"></label>
+    <label>Importe (€)<input name="expenseAmount" data-i="${i}" type="number" min="0" step="0.01" value="${escapeAttr(e.amount ?? '')}" placeholder="0,00"></label>
+    <label>Fecha (opcional)<input name="expenseDate" data-i="${i}" type="date" value="${escapeAttr(e.date || '')}"></label>
+    <label>Notas del gasto (opcional)<input name="expenseNotes" data-i="${i}" value="${escapeAttr(e.notes || '')}" placeholder="Comentario"></label>
+  </div>`;
+  fullScreenForm(`<div class="form-page">
+    <div class="form-page-head"><button type="button" class="ghost form-back" onclick="closeModal()">← Volver</button><div><h1>${editing ? 'Editar viaje' : 'Nuevo viaje'}</h1><p class="muted">Kilómetros y gastos del viaje</p></div></div>
+    <form id="tripForm" class="full-form">
+      <label>Vehículo<select name="vehicleId" required>${db.vehicles.map(v => `<option value="${escapeAttr(v.id)}" ${v.id === t.vehicleId ? 'selected' : ''}>${escapeHtml(v.name || v.brand || 'Vehículo')}</option>`).join('')}</select></label>
+      <label>Nombre del viaje<input name="name" required value="${escapeAttr(t.name || '')}" placeholder="Ej. Fin de semana en Gredos"></label>
+      <label>Fecha de inicio<input type="date" name="date" value="${escapeAttr(t.date || today())}"></label>
+      <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label>Km al iniciar<input name="startKm" type="number" min="0" step="1" value="${escapeAttr(startKm)}" placeholder="Ej. 100000"></label>
+        <label>Km al terminar<input name="endKm" type="number" min="0" step="1" value="${escapeAttr(endKm)}" placeholder="Ej. 101250"></label>
       </div>
-
-
-      <form
-        id="tripForm"
-        class="full-form"
-      >
-
-        <label>
-
-          Vehículo
-
-          <select
-            name="vehicleId"
-            required
-          >
-
-            <option value="">
-              Selecciona vehículo
-            </option>
-
-            ${db.vehicles.map(v => `
-
-              <option
-                value="${v.id}"
-                ${v.id === t.vehicleId ? 'selected' : ''}
-              >
-                ${escapeHtml(
-                  v.name ||
-                  v.brand ||
-                  'Vehículo'
-                )}
-              </option>
-
-            `).join('')}
-
-          </select>
-
-        </label>
-
-
-        <label>
-
-          Nombre del viaje
-
-          <input
-            name="name"
-            value="${escapeAttr(t.name || '')}"
-            placeholder="Ej. Fin de semana en Gredos"
-          >
-
-        </label>
-
-
-        <label>
-
-          Fecha
-
-          <input
-            type="date"
-            name="date"
-            value="${escapeAttr(t.date || today())}"
-            required
-          >
-
-        </label>
-
-
-        <label>
-
-          Origen
-
-          <input
-            name="origin"
-            value="${escapeAttr(t.origin || '')}"
-            placeholder="Ej. Toledo"
-          >
-
-        </label>
-
-
-        <label>
-
-          Destino
-
-          <input
-            name="destination"
-            value="${escapeAttr(t.destination || '')}"
-            placeholder="Ej. Poyales del Hoyo"
-          >
-
-        </label>
-
-
-        <label>
-
-          Kilómetros
-
-          <input
-            type="number"
-            name="km"
-            min="0"
-            step="1"
-            value="${escapeAttr(t.km || '')}"
-          >
-
-        </label>
-
-
-        <label>
-
-          Coste del viaje
-
-          <input
-            type="number"
-            name="cost"
-            min="0"
-            step="0.01"
-            value="${escapeAttr(t.cost || '')}"
-          >
-
-        </label>
-
-
-        <label>
-
-          Notas
-
-          <textarea
-            name="notes"
-            rows="5"
-            placeholder="Observaciones del viaje..."
-          >${escapeHtml(t.notes || '')}</textarea>
-
-        </label>
-
-
-        <div class="form-page-actions">
-
-          <button
-            type="button"
-            class="ghost"
-            onclick="closeModal()"
-          >
-            Cancelar
-          </button>
-
-
-          <button
-            type="submit"
-            class="primary"
-          >
-            ${
-              editing
-                ? 'Guardar cambios'
-                : 'Guardar viaje'
-            }
-          </button>
-
-        </div>
-
-      </form>
-
-    </div>
-
-  `);
-
-
-  document
-    .getElementById('tripForm')
-    .addEventListener(
-      'submit',
-      e => {
-
-        e.preventDefault();
-
-
-        const fd =
-          new FormData(e.target);
-
-
-        const data = {
-
-          vehicleId:
-            fd.get('vehicleId'),
-
-          name:
-            fd.get('name').trim(),
-
-          date:
-            fd.get('date'),
-
-          origin:
-            fd.get('origin').trim(),
-
-          destination:
-            fd.get('destination').trim(),
-
-          km:
-            Number(
-              fd.get('km') || 0
-            ),
-
-          cost:
-            Number(
-              fd.get('cost') || 0
-            ),
-
-          notes:
-            fd.get('notes').trim()
-
-        };
-
-
-        if (editing) {
-
-          Object.assign(
-            record,
-            data
-          );
-
-          save();
-
-          closeModal();
-
-          toast(
-            'Viaje actualizado'
-          );
-
-          render('trips');
-
-          return;
-
-        }
-
-
-        db.trips.push({
-
-          id:
-            uid('t_'),
-
-          ...data
-
-        });
-
-
-        save();
-
-        closeModal();
-
-        toast(
-          'Viaje guardado'
-        );
-
-        render('trips');
-
-      }
-    );
-
+      <div id="tripKmPreview" class="card">Kilómetros recorridos: —</div>
+      <div><div class="list-row"><h2>Gastos del viaje</h2><strong id="tripTotalPreview">Total: 0,00 €</strong></div><p class="muted">Añade tantos gastos como necesites. Se agruparán por categoría.</p></div>
+      <div id="tripExpenses">${expenses.map(expenseRow).join('')}</div>
+      <button type="button" onclick="addTripExpense()">+ Añadir gasto</button>
+      <div id="tripGroupsPreview" class="card">El desglose por categorías aparecerá aquí.</div>
+      <label>Notas del viaje<textarea name="notes" rows="4" placeholder="Comentarios, lugares visitados...">${escapeHtml(t.notes || '')}</textarea></label>
+      <div class="form-page-actions"><button type="button" class="ghost" onclick="closeModal()">Cancelar</button><button type="submit" class="primary">${editing ? 'Guardar cambios' : 'Guardar viaje'}</button></div>
+    </form></div>`);
+  window._tripExpenseDrafts = expenses;
+  window._tripEditingId = id;
+  const form = document.getElementById('tripForm');
+  function readExpenseDrafts() {
+    return [...form.querySelectorAll('.trip-expense-row')].map((row, i) => {
+      const get = n => row.querySelector(`[name="${n}"]`)?.value || '';
+      return { id: expenses[i]?.id || uid('exp_'), category: get('expenseCategory').trim() || 'Otros', concept: get('expenseConcept').trim(), amount: Math.max(0, Number(get('expenseAmount')) || 0), date: get('expenseDate'), notes: get('expenseNotes').trim() };
+    });
+  }
+  function updatePreview() {
+    const a = Number(form.elements.startKm.value), b = Number(form.elements.endKm.value);
+    document.getElementById('tripKmPreview').textContent = form.elements.startKm.value !== '' && form.elements.endKm.value !== '' && b >= a ? `Kilómetros recorridos: ${(b-a).toLocaleString('es-ES')} km` : 'Kilómetros recorridos: —';
+    const ex = readExpenseDrafts(), total = ex.reduce((sum, e) => sum + e.amount, 0), groups = {};
+    ex.forEach(e => groups[e.category] = (groups[e.category] || 0) + e.amount);
+    document.getElementById('tripTotalPreview').textContent = `Total: ${eur(total)}`;
+    document.getElementById('tripGroupsPreview').innerHTML = Object.keys(groups).length ? Object.entries(groups).map(([c, n]) => `<div class="list-row"><span>${escapeHtml(c)}</span><strong>${eur(n)}</strong></div>`).join('') : 'Añade el primer gasto para ver el desglose.';
+  }
+  form.addEventListener('input', updatePreview);
+  updatePreview();
+  window.addTripExpense = function() {
+    const draft = readExpenseDrafts(); draft.push({id:uid('exp_'),category:'Otros',concept:'',amount:'',date:today(),notes:''});
+    renderExpenseRows(draft);
+  };
+  window.removeTripExpense = function(i) {
+    const draft = readExpenseDrafts(); draft.splice(i,1); renderExpenseRows(draft);
+  };
+  function renderExpenseRows(draft) {
+    document.getElementById('tripExpenses').innerHTML = draft.map(expenseRow).join('');
+    expenses.splice(0, expenses.length, ...draft);
+    form.removeEventListener('input', updatePreview);
+    form.addEventListener('input', updatePreview);
+    updatePreview();
+  }
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const start = fd.get('startKm') === '' ? null : Number(fd.get('startKm'));
+    const end = fd.get('endKm') === '' ? null : Number(fd.get('endKm'));
+    if (start !== null && end !== null && end < start) { alert('Los kilómetros finales no pueden ser inferiores a los iniciales.'); return; }
+    const finalExpenses = readExpenseDrafts().filter(x => x.category || x.concept || x.amount > 0);
+    const total = finalExpenses.reduce((sum, x) => sum + x.amount, 0);
+    const oldData = record?.data || {};
+    const payload = { vehicleId: fd.get('vehicleId'), name: String(fd.get('name') || '').trim(), date: fd.get('date') || today(),
+      origin: oldData.origin || '', destination: oldData.destination || '', km: start !== null && end !== null ? end-start : 0,
+      cost: total, notes: String(fd.get('notes') || '').trim(),
+      data: {...oldData, startKm: start, endKm: end, expenses: finalExpenses, notes: String(fd.get('notes') || '').trim()} };
+    if (editing) Object.assign(record, payload);
+    else db.trips.push({id:uid('t_'), ...payload});
+    save(); closeModal(); toast(editing ? 'Viaje actualizado' : 'Viaje guardado'); render('trips');
+  });
 }
-
-
-/* =========================================================
-   BORRAR VIAJE
-========================================================= */
 
 async function deleteTrip(id) {
 
