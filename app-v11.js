@@ -1839,77 +1839,65 @@ function expenseBreakdownCard(
   `;
 }
 function fuelPriceEvolution(vehicleId = null) {
-
-  const list =
-    db.fuel
-      .filter(f =>
-        !vehicleId ||
-        f.vehicleId === vehicleId
-      )
-      .filter(f => Number(f.price || 0) > 0)
-      .sort((a, b) =>
-        String(b.date || '')
-          .localeCompare(
-            String(a.date || '')
-          )
-      )
-      .slice(0, 12);
+  const list = db.fuel
+    .filter(f => !vehicleId || f.vehicleId === vehicleId)
+    .filter(f => Number(f.price || 0) > 0)
+    .sort((a, b) =>
+      String(b.date || '').localeCompare(String(a.date || ''))
+    );
 
   return `
-
     <div class="card">
-
-      <h3>
-        📈 Evolución de precios
-      </h3>
-
+      <h3>📈 Evolución de precios</h3>
       ${
         list.length
-
-          ? list.map(f => `
-
-              <div class="list-row">
-
+          ? `
+            ${list.map((f, index) => `
+              <div
+                class="list-row ${index >= 5 ? 'fuel-evolution-extra' : ''}"
+                ${index >= 5 ? 'style="display:none"' : ''}
+              >
                 <div>
-
-                  <strong>
-                    ${f.date || ''}
-                  </strong>
-
+                  <strong>${f.date || ''}</strong>
                   <small>
-                    ${
-                      escapeHtml(
-                        f.stationName ||
-                        fuelTypeLabel(f.fuelType) ||
-                        'Repostaje'
-                      )
-                    }
+                    ${escapeHtml(
+                      f.stationName ||
+                      fuelTypeLabel(f.fuelType) ||
+                      'Repostaje'
+                    )}
                   </small>
-
                 </div>
-
-                <strong>
-                  ${Number(f.price).toFixed(3)} €/L
-                </strong>
-
+                <strong>${Number(f.price).toFixed(3)} €/L</strong>
               </div>
-
-            `).join('')
-
-          : `
-
-            <p class="muted">
-              Todavía no hay precios registrados.
-            </p>
-
+            `).join('')}
+            ${
+              list.length > 5
+                ? `<div class="page-actions">
+                    <button type="button" onclick="toggleFuelPriceEvolution(this)">Ver todos</button>
+                  </div>`
+                : ''
+            }
           `
+          : `<p class="muted">Todavía no hay precios registrados.</p>`
       }
-
     </div>
-
   `;
 }
 
+function toggleFuelPriceEvolution(button) {
+  const card = button.closest('.card');
+  if (!card) return;
+
+  const rows = card.querySelectorAll('.fuel-evolution-extra');
+  const expanded = button.dataset.expanded === 'true';
+
+  rows.forEach(row => {
+    row.style.display = expanded ? 'none' : '';
+  });
+
+  button.dataset.expanded = expanded ? 'false' : 'true';
+  button.textContent = expanded ? 'Ver todos' : 'Mostrar menos';
+}
 
 function fuelTypeLabel(type) {
 
@@ -4520,6 +4508,19 @@ async function delVehicle(id) {
    REPOSTAJES
 ========================================================= */
 
+let fuelVisibleCount = 10;
+let tripsVisibleCount = 10;
+
+function loadMoreFuel() {
+  fuelVisibleCount += 10;
+  render('fuel');
+}
+
+function loadMoreTrips() {
+  tripsVisibleCount += 10;
+  render('trips');
+}
+
 function fuelPage() {
 
   const list =
@@ -4531,6 +4532,7 @@ function fuelPage() {
           )
       );
 
+  const visibleList = list.slice(0, fuelVisibleCount);
 
   return pageLayout(
     'Repostajes',
@@ -4559,7 +4561,7 @@ function fuelPage() {
         ${
           list.length
 
-            ? list
+            ? visibleList
                 .map(f => {
 
                   const v =
@@ -4661,6 +4663,12 @@ function fuelPage() {
               </div>
 
             `
+        }
+
+        ${
+          list.length > visibleList.length
+            ? `<div class="page-actions"><button type="button" onclick="loadMoreFuel()">Cargar 10 más</button></div>`
+            : ''
         }
 
       </div>
@@ -5779,10 +5787,11 @@ function tripKm(trip) {
 
 function tripsPage() {
   const list = [...db.trips].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  const visibleList = list.slice(0, tripsVisibleCount);
   return pageLayout('Viajes', `
     <div class="page-actions"><button class="primary" type="button" onclick="tripForm()">+ Nuevo viaje</button></div>
     <div class="stack">
-      ${list.length ? list.map(t => {
+      ${list.length ? visibleList.map(t => {
         const expenses = tripExpenses(t);
         const groups = {};
         expenses.forEach(e => { const c = (e.category || 'Otros').trim() || 'Otros'; groups[c] = (groups[c] || 0) + (Number(e.amount) || 0); });
@@ -5798,6 +5807,7 @@ function tripsPage() {
           <div class="actions"><button type="button" onclick="tripForm('${t.id}')">✏️ Editar</button><button class="danger" type="button" onclick="deleteTrip('${t.id}')">🗑️ Borrar</button></div>
         </article>`;
       }).join('') : `<div class="card empty"><h3>No hay viajes</h3><p>Añade tu primer viaje para empezar.</p></div>`}
+      ${list.length > visibleList.length ? `<div class="page-actions"><button type="button" onclick="loadMoreTrips()">Cargar 10 más</button></div>` : ''}
     </div>`);
 }
 
@@ -6823,6 +6833,9 @@ function render(page) {
 
 
 function go(page) {
+
+  if (page === 'fuel') fuelVisibleCount = 10;
+  if (page === 'trips') tripsVisibleCount = 10;
 
   closeModal();
 
